@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-grp"},"result":{"asset":{"brand":{"uid":"syn-brand-grp"},"instruments":[{"classCode":"SYN","ticker":"SYN_GRP"}],"name":"ПАО АФК «Синт-Система»: Синт-Система ао","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-grp"}},"tool":"invest_get_asset"}

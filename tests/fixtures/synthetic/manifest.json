@@ -22,6 +22,73 @@
    "why": "обыкновенная и привилегированная акции одного эмитента"
   },
   {
+   "a": "SYN_BANK1",
+   "b": "SYN_BANK2",
+   "high": 0.5,
+   "low": 0.3,
+   "market": "SYN_IDXA",
+   "regime": "normal",
+   "type": "resid_corr_between",
+   "why": "«Сбер» и «ВТБ» в обычные дни слабо связаны после вычета рынка"
+  },
+  {
+   "a": "SYN_BANK1",
+   "b": "SYN_BANK2",
+   "regime": "shock",
+   "type": "corr_gte",
+   "value": 0.8,
+   "why": "в шоки «Сбер» и «ВТБ» падают вместе"
+  },
+  {
+   "a": "SYN_BANK1",
+   "b": "SYN_BANK2",
+   "type": "calm_trend_opposite",
+   "why": "в спокойные дни один растёт, другой падает"
+  },
+  {
+   "a": "SYN_OIL1",
+   "b": "SYN_OIL2",
+   "regime": "shock",
+   "type": "corr_gte",
+   "value": 0.9,
+   "why": "в шоки корреляция внутри сектора растёт"
+  },
+  {
+   "a": "SYN_IDXA",
+   "episode": "SHOCK_A",
+   "type": "episode_drawdown_lte",
+   "value": -0.2,
+   "why": "эпизод SHOCK_A: рынок падает больше чем на 20%"
+  },
+  {
+   "a": "SYN_IDXA",
+   "episode": "SHOCK_B",
+   "type": "episode_drawdown_lte",
+   "value": -0.2,
+   "why": "эпизод SHOCK_B: рынок падает больше чем на 20%"
+  },
+  {
+   "a": "SYN_IDXA",
+   "episode": "SHOCK_C",
+   "type": "episode_drawdown_lte",
+   "value": -0.15,
+   "why": "эпизод SHOCK_C: затяжное снижение рынка"
+  },
+  {
+   "a": "SYN_GRP",
+   "b": "SYN_GRPTEL",
+   "type": "corr_gte",
+   "value": 0.5,
+   "why": "материнская и дочерняя компании группы «Синт-Система»"
+  },
+  {
+   "a": "SYN_GRPFOR_B",
+   "b": "SYN_GRPDEV_B",
+   "type": "corr_gte",
+   "value": 0.5,
+   "why": "облигации дочерних компаний одной группы"
+  },
+  {
    "a": "SYN_GOLD",
    "b": "SYN_IDXA",
    "type": "corr_lte",
@@ -70,83 +137,112 @@
    "b": "SYN_OIL2",
    "high": 0.8,
    "low": 0.6,
+   "regime": "normal",
    "type": "corr_between",
-   "why": "нефтяные акции"
+   "why": "нефть в обычные дни"
   },
   {
    "a": "SYN_OIL1",
    "b": "SYN_OIL3",
    "high": 0.8,
    "low": 0.6,
+   "regime": "normal",
    "type": "corr_between",
-   "why": "нефтяные акции"
+   "why": "нефть в обычные дни"
   },
   {
    "a": "SYN_OIL1",
    "b": "SYN_OIL4",
    "high": 0.8,
    "low": 0.6,
+   "regime": "normal",
    "type": "corr_between",
-   "why": "нефтяные акции"
+   "why": "нефть в обычные дни"
   },
   {
    "a": "SYN_OIL1",
    "b": "SYN_OIL5",
    "high": 0.8,
    "low": 0.6,
+   "regime": "normal",
    "type": "corr_between",
-   "why": "нефтяные акции"
+   "why": "нефть в обычные дни"
   },
   {
    "a": "SYN_OIL2",
    "b": "SYN_OIL3",
    "high": 0.8,
    "low": 0.6,
+   "regime": "normal",
    "type": "corr_between",
-   "why": "нефтяные акции"
+   "why": "нефть в обычные дни"
   },
   {
    "a": "SYN_OIL2",
    "b": "SYN_OIL4",
    "high": 0.8,
    "low": 0.6,
+   "regime": "normal",
    "type": "corr_between",
-   "why": "нефтяные акции"
+   "why": "нефть в обычные дни"
   },
   {
    "a": "SYN_OIL2",
    "b": "SYN_OIL5",
    "high": 0.8,
    "low": 0.6,
+   "regime": "normal",
    "type": "corr_between",
-   "why": "нефтяные акции"
+   "why": "нефть в обычные дни"
   },
   {
    "a": "SYN_OIL3",
    "b": "SYN_OIL4",
    "high": 0.8,
    "low": 0.6,
+   "regime": "normal",
    "type": "corr_between",
-   "why": "нефтяные акции"
+   "why": "нефть в обычные дни"
   },
   {
    "a": "SYN_OIL3",
    "b": "SYN_OIL5",
    "high": 0.8,
    "low": 0.6,
+   "regime": "normal",
    "type": "corr_between",
-   "why": "нефтяные акции"
+   "why": "нефть в обычные дни"
   },
   {
    "a": "SYN_OIL4",
    "b": "SYN_OIL5",
    "high": 0.8,
    "low": 0.6,
+   "regime": "normal",
    "type": "corr_between",
-   "why": "нефтяные акции"
+   "why": "нефть в обычные дни"
   }
  ],
  "generator": "factorminus.synth.generator",
+ "groups": [
+  {
+   "instruments": [
+    "SYN_GRP",
+    "SYN_GRPTEL",
+    "SYN_GRPTEL_B",
+    "SYN_GRPFOR_B",
+    "SYN_GRPDEV_B"
+   ],
+   "member_brands": [
+    "СинтМобайл",
+    "СинтЛес",
+    "СинтСтрой"
+   ],
+   "name": "Синт-Система",
+   "parent_brand": "Синт-Система",
+   "type": "ownership"
+  }
+ ],
  "index_weights": {
   "SYNIDX": {
    "SYN_BANK1": 14.0,
@@ -168,7 +264,7 @@
   {
    "basket": null,
    "brand": "Синтнефть",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_OIL1",
    "in_universe": true,
    "index": null,
@@ -183,7 +279,7 @@
   {
    "basket": null,
    "brand": "Нефтесинт",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_OIL2",
    "in_universe": true,
    "index": null,
@@ -198,7 +294,7 @@
   {
    "basket": null,
    "brand": "Синтгаз",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_OIL3",
    "in_universe": true,
    "index": null,
@@ -213,7 +309,7 @@
   {
    "basket": null,
    "brand": "Северная нефть",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_OIL4",
    "in_universe": true,
    "index": null,
@@ -228,7 +324,7 @@
   {
    "basket": null,
    "brand": "Синт-Переработка",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_OIL5",
    "in_universe": true,
    "index": null,
@@ -243,7 +339,7 @@
   {
    "basket": null,
    "brand": "Синтбанк",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_BANK1",
    "in_universe": true,
    "index": null,
@@ -261,7 +357,7 @@
     "SYN_BANK1": 1.0
    },
    "brand": "Синтбанк",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_BANK1P",
    "in_universe": true,
    "index": null,
@@ -273,14 +369,14 @@
   {
    "basket": null,
    "brand": "Банк Синт-Капитал",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_BANK2",
    "in_universe": true,
    "index": null,
    "kind": "share",
    "loads": {
-    "banks": 0.9,
-    "market": 1.2,
+    "banks": 1.0,
+    "market": 1.1,
     "rate": -0.6
    },
    "role": "share",
@@ -289,7 +385,7 @@
   {
    "basket": null,
    "brand": "Синтметалл",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_MET1",
    "in_universe": true,
    "index": null,
@@ -304,7 +400,7 @@
   {
    "basket": null,
    "brand": "Синтникель",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_MET2",
    "in_universe": true,
    "index": null,
@@ -319,7 +415,7 @@
   {
    "basket": null,
    "brand": "Синтех",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_TECH1",
    "in_universe": true,
    "index": null,
@@ -334,7 +430,7 @@
   {
    "basket": null,
    "brand": "СинтСофт",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_TECH2",
    "in_universe": true,
    "index": null,
@@ -349,7 +445,7 @@
   {
    "basket": null,
    "brand": "СинтМаркет",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_RETAIL1",
    "in_universe": true,
    "index": null,
@@ -363,7 +459,7 @@
   {
    "basket": null,
    "brand": "СинтТелеком",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_TELECOM1",
    "in_universe": true,
    "index": null,
@@ -378,7 +474,7 @@
   {
    "basket": null,
    "brand": "СинтЭнерго",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_POWER1",
    "in_universe": true,
    "index": null,
@@ -389,6 +485,82 @@
    },
    "role": "share",
    "sector": "utilities"
+  },
+  {
+   "basket": null,
+   "brand": "Синт-Система",
+   "history_days": 1500,
+   "id": "SYN_GRP",
+   "in_universe": true,
+   "index": null,
+   "kind": "share",
+   "loads": {
+    "group": 1.0,
+    "market": 1.0
+   },
+   "role": "share",
+   "sector": "financial"
+  },
+  {
+   "basket": null,
+   "brand": "СинтМобайл",
+   "history_days": 1500,
+   "id": "SYN_GRPTEL",
+   "in_universe": true,
+   "index": null,
+   "kind": "share",
+   "loads": {
+    "group": 0.6,
+    "market": 0.6,
+    "rate": -0.3
+   },
+   "role": "share",
+   "sector": "telecom"
+  },
+  {
+   "basket": null,
+   "brand": "СинтМобайл",
+   "history_days": 1500,
+   "id": "SYN_GRPTEL_B",
+   "in_universe": true,
+   "index": null,
+   "kind": "bond",
+   "loads": {
+    "group": 0.15,
+    "rate": -0.6
+   },
+   "role": "corp_bond",
+   "sector": "telecom"
+  },
+  {
+   "basket": null,
+   "brand": "СинтЛес",
+   "history_days": 1500,
+   "id": "SYN_GRPFOR_B",
+   "in_universe": true,
+   "index": null,
+   "kind": "bond",
+   "loads": {
+    "group": 0.3,
+    "rate": -0.6
+   },
+   "role": "corp_bond",
+   "sector": "materials"
+  },
+  {
+   "basket": null,
+   "brand": "СинтСтрой",
+   "history_days": 1500,
+   "id": "SYN_GRPDEV_B",
+   "in_universe": true,
+   "index": null,
+   "kind": "bond",
+   "loads": {
+    "group": 0.25,
+    "rate": -0.6
+   },
+   "role": "corp_bond",
+   "sector": "real_estate"
   },
   {
    "basket": null,
@@ -408,7 +580,7 @@
   {
    "basket": null,
    "brand": "Синт-Отсутствующая",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_ABSENT",
    "in_universe": false,
    "index": null,
@@ -436,7 +608,7 @@
     "SYN_TELECOM1": 0.04
    },
    "brand": "Синт-Капитал Индекс",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_IDXA",
    "in_universe": true,
    "index": "SYNIDX",
@@ -462,7 +634,7 @@
     "SYN_TELECOM1": 0.04
    },
    "brand": "Первая Синт — Индекс",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_IDXB",
    "in_universe": true,
    "index": "SYNIDX",
@@ -485,7 +657,7 @@
     "SYN_TECH2": 0.066667
    },
    "brand": "Синт Топ Компаний",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_TOPCO",
    "in_universe": true,
    "index": null,
@@ -505,7 +677,7 @@
     "SYN_TELECOM1": 0.15
    },
    "brand": "Синт Дивидендный",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_DIVACT",
    "in_universe": true,
    "index": null,
@@ -517,7 +689,7 @@
   {
    "basket": null,
    "brand": "Синт Золото",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_GOLD",
    "in_universe": true,
    "index": null,
@@ -532,7 +704,7 @@
   {
    "basket": null,
    "brand": "Синт Ликвидность",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_MONEY",
    "in_universe": true,
    "index": null,
@@ -544,7 +716,7 @@
   {
    "basket": null,
    "brand": "Минфин Синт",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_OFZS",
    "in_universe": true,
    "index": null,
@@ -558,7 +730,7 @@
   {
    "basket": null,
    "brand": "Минфин Синт",
-   "history_days": 500,
+   "history_days": 1500,
    "id": "SYN_OFZL",
    "in_universe": true,
    "index": null,
@@ -571,10 +743,25 @@
   }
  ],
  "params": {
-  "end": "2025-12-01",
+  "drop_days": [
+   "2020-08-05",
+   "2020-08-10",
+   "2020-08-19",
+   "2021-02-25",
+   "2022-05-19",
+   "2022-05-30",
+   "2022-11-03",
+   "2023-06-12",
+   "2023-08-30",
+   "2024-01-05",
+   "2025-01-17",
+   "2025-08-20"
+  ],
+  "end": "2025-10-01",
   "factors": {
    "banks": 0.009,
    "gold": 0.008,
+   "group": 0.008,
    "market": 0.012,
    "metals": 0.009,
    "oil": 0.01,
@@ -582,8 +769,39 @@
    "tech": 0.012
   },
   "index_id": "SYNIDX",
-  "n_days": 500,
-  "start": "2024-01-02",
+  "market_drift": 0.0003,
+  "n_days": 1500,
+  "regime_note": "режим относится к доходности дня date (от закрытия предыдущего дня)",
+  "shocks": [
+   {
+    "days": 30,
+    "end": "2020-04-09",
+    "id": "SHOCK_A",
+    "market_mean": -0.012,
+    "market_vol": 0.035,
+    "start": "2020-02-28",
+    "stress_vol": 0.025
+   },
+   {
+    "days": 20,
+    "end": "2022-03-24",
+    "id": "SHOCK_B",
+    "market_mean": -0.015,
+    "market_vol": 0.04,
+    "start": "2022-02-25",
+    "stress_vol": 0.03
+   },
+   {
+    "days": 150,
+    "end": "2024-10-17",
+    "id": "SHOCK_C",
+    "market_mean": -0.0025,
+    "market_vol": 0.015,
+    "start": "2024-03-22",
+    "stress_vol": 0.012
+   }
+  ],
+  "start": "2020-01-02",
   "tracking_noise": 0.0015
  },
  "seed": 42

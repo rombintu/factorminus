@@ -18,7 +18,7 @@
  "bank2": {
   "company": "ПАО «Банк Синт-Капитал»",
   "countryOfRisk": "SY",
-  "description": "Розничный и корпоративный банк.",
+  "description": "Второй по величине государственный банк: розничный и корпоративный бизнес.",
   "name": "Банк Синт-Капитал",
   "sector": "financial",
   "uid": "syn-brand-bank2"
@@ -38,6 +38,38 @@
   "name": "Синт Золото",
   "sector": "other",
   "uid": "syn-brand-gold"
+ },
+ "grp": {
+  "company": "ПАО АФК «Синт-Система»",
+  "countryOfRisk": "SY",
+  "description": "Инвестиционный холдинг: телеком, лесопереработка, девелопмент.",
+  "name": "Синт-Система",
+  "sector": "financial",
+  "uid": "syn-brand-grp"
+ },
+ "grpdev": {
+  "company": "ПАО «СинтСтрой»",
+  "countryOfRisk": "SY",
+  "description": "Девелопер жилой недвижимости.",
+  "name": "СинтСтрой",
+  "sector": "real_estate",
+  "uid": "syn-brand-grpdev"
+ },
+ "grpfor": {
+  "company": "ПАО «СинтЛес»",
+  "countryOfRisk": "SY",
+  "description": "Лесопромышленная компания: пиломатериалы, бумага, фанера.",
+  "name": "СинтЛес",
+  "sector": "materials",
+  "uid": "syn-brand-grpfor"
+ },
+ "grptel": {
+  "company": "ПАО «СинтМобайл»",
+  "countryOfRisk": "SY",
+  "description": "Мобильная связь и цифровые сервисы.",
+  "name": "СинтМобайл",
+  "sector": "telecom",
+  "uid": "syn-brand-grptel"
  },
  "idxa": {
   "company": "УК «Синт-Капитал»",

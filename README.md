@@ -39,7 +39,7 @@ echo 'TINVEST_CA_BUNDLE=data/ca/ru-bundle.pem' >> .env
 | `fm db init`, `fm db stats` | миграции; счётчики таблиц и диапазон свечей |
 | `fm mcp check` | рукопожатие с MCP, наличие инструментов белого списка |
 | `fm universe verify` | проверка `data/universe.yaml` через MCP |
-| `fm ingest [--only A,B] [--since 2024-01-01] [--mode live\|record\|replay]` | загрузка карточек, брендов, свечей и ставок риска |
+| `fm ingest [--only A,B] [--since 2020-01-01] [--mode live\|record\|replay]` | загрузка карточек, брендов, свечей и ставок риска |
 | `fm iss weights --index IMOEX` | веса индекса из ISS Мосбиржи |
 | `fm synth generate --seed 42`, `fm synth load` | синтетический набор и его загрузка без сети |
 | `fm contract export` | JSON Schema контракта в `docs/contract/` |

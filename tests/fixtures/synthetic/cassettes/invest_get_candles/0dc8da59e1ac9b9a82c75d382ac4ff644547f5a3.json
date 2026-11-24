@@ -1,1 +1,0 @@
-{"arguments":{"from":"2024-01-02T00:00:00Z","instrumentId":"SYN_NEWCO","interval":"CANDLE_INTERVAL_DAY","to":"2025-01-01T00:00:00Z"},"result":{"candles":[],"priceCurrency":"rub"},"tool":"invest_get_candles"}

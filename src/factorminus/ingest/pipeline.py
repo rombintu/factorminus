@@ -165,6 +165,8 @@ class _Run:
     def candles(
         self, e: UniverseEntry, since: date, until: date, listed: str | None = None
     ) -> None:
+        if listed and date.fromisoformat(listed) > since:  # у молодых бумаг история короче
+            since = date.fromisoformat(listed)
         first, last = self.conn.execute(
             "SELECT MIN(date), MAX(date) FROM candles WHERE instrument_id=?", (e.id,)
         ).fetchone()
@@ -172,8 +174,8 @@ class _Run:
         if last is None:
             spans.append((since, until))
         else:
-            # --since раньше сохранённой истории, и бумага тогда уже торговалась
-            if since < date.fromisoformat(first) and (listed is None or listed < first):
+            # --since раньше сохранённой истории (с поправкой на дату листинга)
+            if since < date.fromisoformat(first):
                 spans.append((since, date.fromisoformat(first) - timedelta(days=1)))
             # С последней сохранённой даты, а не со следующей: свеча дня может иметь время
             # в полночь МСК (предыдущий день по UTC). Пересечение в день безопасно (UPSERT).

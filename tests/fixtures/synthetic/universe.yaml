@@ -59,6 +59,26 @@
   kind: share
   role: share
   note: СинтЭнерго
+- id: SYN_GRP
+  kind: share
+  role: share
+  note: Синт-Система ао
+- id: SYN_GRPTEL
+  kind: share
+  role: share
+  note: СинтМобайл ао
+- id: SYN_GRPTEL_B
+  kind: bond
+  role: corp_bond
+  note: СинтМобайл 001P-02
+- id: SYN_GRPFOR_B
+  kind: bond
+  role: corp_bond
+  note: СинтЛес 002P-01
+- id: SYN_GRPDEV_B
+  kind: bond
+  role: corp_bond
+  note: СинтСтрой 002P-01
 - id: SYN_NEWCO
   kind: share
   role: share

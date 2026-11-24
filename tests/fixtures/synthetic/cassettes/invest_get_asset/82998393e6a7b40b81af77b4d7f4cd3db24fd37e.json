@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-grptel"},"result":{"asset":{"brand":{"uid":"syn-brand-grptel"},"instruments":[{"classCode":"SYN","ticker":"SYN_GRPTEL"}],"name":"ПАО «СинтМобайл»: СинтМобайл ао","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-grptel"}},"tool":"invest_get_asset"}

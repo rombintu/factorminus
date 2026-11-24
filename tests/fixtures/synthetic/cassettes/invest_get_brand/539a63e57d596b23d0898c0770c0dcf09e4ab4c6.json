@@ -1,1 +1,1 @@
-{"arguments":{"id":"syn-brand-bank2"},"result":{"brand":{"company":"ПАО «Банк Синт-Капитал»","countryOfRisk":"SY","description":"Розничный и корпоративный банк.","name":"Банк Синт-Капитал","sector":"financial","uid":"syn-brand-bank2"}},"tool":"invest_get_brand"}
+{"arguments":{"id":"syn-brand-bank2"},"result":{"brand":{"company":"ПАО «Банк Синт-Капитал»","countryOfRisk":"SY","description":"Второй по величине государственный банк: розничный и корпоративный бизнес.","name":"Банк Синт-Капитал","sector":"financial","uid":"syn-brand-bank2"}},"tool":"invest_get_brand"}

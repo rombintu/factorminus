@@ -248,7 +248,7 @@ def _today_msk():
 @friendly_errors
 def ingest(
     only: Annotated[str | None, typer.Option(help="Список id через запятую")] = None,
-    since: Annotated[str, typer.Option(help="Начало свечей, YYYY-MM-DD")] = "2024-01-01",
+    since: Annotated[str, typer.Option(help="Начало свечей, YYYY-MM-DD")] = "2020-01-01",
     until: Annotated[
         str | None, typer.Option(help="Конец свечей (по умолчанию сегодня, МСК)")
     ] = None,

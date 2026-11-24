@@ -9,7 +9,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYOIL1000000",
   "lot": 10,
@@ -28,7 +28,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYOIL2000000",
   "lot": 10,
@@ -47,7 +47,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYOIL3000000",
   "lot": 10,
@@ -66,7 +66,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYOIL4000000",
   "lot": 10,
@@ -85,7 +85,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYOIL5000000",
   "lot": 10,
@@ -104,7 +104,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYBANK100000",
   "lot": 10,
@@ -123,7 +123,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYBANK1P0000",
   "lot": 10,
@@ -142,7 +142,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYBANK200000",
   "lot": 10,
@@ -161,7 +161,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYMET1000000",
   "lot": 10,
@@ -180,7 +180,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYMET2000000",
   "lot": 10,
@@ -199,7 +199,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYTECH100000",
   "lot": 10,
@@ -218,7 +218,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYTECH200000",
   "lot": 10,
@@ -237,7 +237,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYRETAIL1000",
   "lot": 10,
@@ -256,7 +256,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYTELECOM100",
   "lot": 10,
@@ -275,7 +275,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYPOWER10000",
   "lot": 10,
@@ -283,6 +283,104 @@
   "positionUid": "syn-pos-syn-power1",
   "role": "share",
   "ticker": "SYN_POWER1"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-grp",
+  "brandUid": "syn-brand-grp",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYGRP0000000",
+  "lot": 10,
+  "name": "Синт-Система ао",
+  "positionUid": "syn-pos-syn-grp",
+  "role": "share",
+  "ticker": "SYN_GRP"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-grptel",
+  "brandUid": "syn-brand-grptel",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYGRPTEL0000",
+  "lot": 10,
+  "name": "СинтМобайл ао",
+  "positionUid": "syn-pos-syn-grptel",
+  "role": "share",
+  "ticker": "SYN_GRPTEL"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-grptel-b",
+  "brandUid": "syn-brand-grptel",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYGRPTEL_B00",
+  "lot": 1,
+  "maturityDate": "2028-11-15",
+  "name": "СинтМобайл 001P-02",
+  "positionUid": "syn-pos-syn-grptel-b",
+  "role": "corp_bond",
+  "ticker": "SYN_GRPTEL_B"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-grpfor-b",
+  "brandUid": "syn-brand-grpfor",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYGRPFOR_B00",
+  "lot": 1,
+  "maturityDate": "2029-03-10",
+  "name": "СинтЛес 002P-01",
+  "positionUid": "syn-pos-syn-grpfor-b",
+  "role": "corp_bond",
+  "ticker": "SYN_GRPFOR_B"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-grpdev-b",
+  "brandUid": "syn-brand-grpdev",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYGRPDEV_B00",
+  "lot": 1,
+  "maturityDate": "2028-02-03",
+  "name": "СинтСтрой 002P-01",
+  "positionUid": "syn-pos-syn-grpdev-b",
+  "role": "corp_bond",
+  "ticker": "SYN_GRPDEV_B"
  },
  {
   "apiTradeAvailableFlag": true,
@@ -294,7 +392,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2025-10-07T07:00:00Z",
+  "first1dayCandleDate": "2025-08-07T07:00:00Z",
   "index": null,
   "isin": "SYNEWCO00000",
   "lot": 10,
@@ -313,7 +411,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYABSENT0000",
   "lot": 10,
@@ -332,7 +430,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": "SYNIDX",
   "isin": "SYIDXA000000",
   "lot": 1,
@@ -351,7 +449,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": "SYNIDX",
   "isin": "SYIDXB000000",
   "lot": 1,
@@ -370,7 +468,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYTOPCO00000",
   "lot": 1,
@@ -389,7 +487,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYDIVACT0000",
   "lot": 1,
@@ -408,7 +506,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYGOLD000000",
   "lot": 1,
@@ -427,7 +525,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYMONEY00000",
   "lot": 1,
@@ -446,7 +544,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYOFZS000000",
   "lot": 1,
@@ -466,7 +564,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
   "index": null,
   "isin": "SYOFZL000000",
   "lot": 1,

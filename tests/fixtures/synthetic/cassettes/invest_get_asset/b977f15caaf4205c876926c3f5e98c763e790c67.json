@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-grpfor-b"},"result":{"asset":{"brand":{"uid":"syn-brand-grpfor"},"instruments":[{"classCode":"SYN","ticker":"SYN_GRPFOR_B"}],"name":"ПАО «СинтЛес»: СинтЛес 002P-01","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-grpfor-b"}},"tool":"invest_get_asset"}

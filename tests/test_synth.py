@@ -49,23 +49,98 @@ def closes():
     return series
 
 
-def _returns(closes, a, b=None):
-    days = sorted(closes[a]) if b is None else sorted(set(closes[a]) & set(closes[b]))
-    ra = np.diff(np.log([closes[a][d] for d in days]))
-    if b is None:
-        return ra
-    rb = np.diff(np.log([closes[b][d] for d in days]))
-    return ra, rb
+@pytest.fixture(scope="module")
+def manifest():
+    return json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
 
 
-def _corr(closes, a, b):
-    ra, rb = _returns(closes, a, b)
-    return float(np.corrcoef(ra, rb)[0, 1])
+def regime_days(manifest) -> dict[str, set[str]]:
+    """Даты (день доходности) по режимам: shock = эпизоды и дни падения."""
+    p = manifest["params"]
+    shock = set(p["drop_days"])
+    episodes = {}
+    for e in p["shocks"]:
+        days = {d for d in _all_days(manifest) if e["start"] <= d <= e["end"]}
+        episodes[e["id"]] = days
+        shock |= days
+    return {"shock": shock, **episodes}
 
 
-def test_manifest_expected_properties(closes):
-    manifest = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
+def _all_days(manifest):
+    from datetime import date
+
+    from factorminus.synth.generator import business_days
+
+    p = manifest["params"]
+    return [d.isoformat() for d in business_days(date.fromisoformat(p["start"]), p["n_days"])]
+
+
+def returns(closes, ids, regime=None, regimes=None):
+    """Лог-доходности по общим датам; день доходности = дата закрытия."""
+    days = sorted(set.intersection(*(set(closes[i]) for i in ids)))
+    out = {i: np.diff(np.log([closes[i][d] for d in days])) for i in ids}
+    ret_days = days[1:]
+    if regime is not None:
+        mask = np.array([(d in regimes["shock"]) == (regime == "shock") for d in ret_days])
+        out = {i: r[mask] for i, r in out.items()}
+    return out
+
+
+def corr(closes, a, b, regime=None, regimes=None):
+    r = returns(closes, [a, b], regime, regimes)
+    return float(np.corrcoef(r[a], r[b])[0, 1])
+
+
+def resid_corr(closes, a, b, market, regime, regimes):
+    r = returns(closes, [a, b, market], regime, regimes)
+    m = r[market]
+
+    def resid(x):
+        beta = np.cov(x, m)[0, 1] / np.var(m, ddof=1)
+        return x - beta * m
+
+    return float(np.corrcoef(resid(r[a]), resid(r[b]))[0, 1])
+
+
+def check(p, closes, manifest, regimes, universe_ids) -> tuple[bool, float | None]:
+    t, a, reg = p["type"], p["a"], p.get("regime")
+    if t == "corr_gte":
+        v = corr(closes, a, p["b"], reg, regimes)
+        return v >= p["value"], v
+    if t == "corr_lte":
+        v = corr(closes, a, p["b"], reg, regimes)
+        return v <= p["value"], v
+    if t == "corr_between":
+        v = corr(closes, a, p["b"], reg, regimes)
+        return p["low"] <= v <= p["high"], v
+    if t == "resid_corr_between":
+        v = resid_corr(closes, a, p["b"], p["market"], reg, regimes)
+        return p["low"] <= v <= p["high"], v
+    if t == "calm_trend_opposite":
+        r = returns(closes, [a, p["b"]], "normal", regimes)
+        va, vb = float(r[a].sum()), float(r[p["b"]].sum())
+        return va > 0 > vb, va - vb
+    if t == "episode_drawdown_lte":
+        days = sorted(regimes[p["episode"]])
+        prev = max(d for d in closes[a] if d < days[0])
+        v = closes[a][days[-1]] / closes[a][prev] - 1
+        return v <= p["value"], v
+    if t == "vol_lte":
+        v = float(np.std(returns(closes, [a])[a]))
+        return v <= p["value"], v
+    if t == "vol_gt":
+        r = returns(closes, [a, p["b"]])
+        return bool(np.std(r[a]) > np.std(r[p["b"]])), None
+    if t == "history_days_eq":
+        return len(closes[a]) == p["value"], len(closes[a])
+    if t == "not_in_universe":
+        return a not in universe_ids and a not in closes, None
+    raise AssertionError(f"неизвестный тип свойства {t}")
+
+
+def test_manifest_expected_properties(closes, manifest):
     assert manifest["seed"] == 42
+    regimes = regime_days(manifest)
     universe_ids = {
         line.split(":", 1)[1].strip()
         for line in (FIXTURES / "universe.yaml").read_text(encoding="utf-8").splitlines()
@@ -73,27 +148,26 @@ def test_manifest_expected_properties(closes):
     }
     failures = []
     for p in manifest["expected"]:
-        t, a = p["type"], p["a"]
-        if t == "corr_gte":
-            ok = _corr(closes, a, p["b"]) >= p["value"]
-        elif t == "corr_lte":
-            ok = _corr(closes, a, p["b"]) <= p["value"]
-        elif t == "corr_between":
-            ok = p["low"] <= _corr(closes, a, p["b"]) <= p["high"]
-        elif t == "vol_lte":
-            ok = float(np.std(_returns(closes, a))) <= p["value"]
-        elif t == "vol_gt":
-            ok = np.std(_returns(closes, a)) > np.std(_returns(closes, p["b"]))
-        elif t == "history_days_eq":
-            ok = len(closes[a]) == p["value"]
-        elif t == "not_in_universe":
-            ok = a not in universe_ids and a not in closes
-        else:
-            raise AssertionError(f"неизвестный тип свойства {t}")
+        ok, value = check(p, closes, manifest, regimes, universe_ids)
         if not ok:
-            failures.append(p)
+            failures.append((p, value))
     assert not failures, failures
-    assert len(manifest["expected"]) >= 15
+    assert len(manifest["expected"]) >= 25
+
+
+def test_manifest_describes_shocks_and_groups(manifest):
+    p = manifest["params"]
+    assert p["n_days"] == 1500
+    assert [(e["id"], e["days"]) for e in p["shocks"]] == [
+        ("SHOCK_A", 30),
+        ("SHOCK_B", 20),
+        ("SHOCK_C", 150),
+    ]
+    assert len(p["drop_days"]) >= 5
+    group = manifest["groups"][0]
+    assert len(group["member_brands"]) + 1 >= 3
+    kinds = {i["id"]: i["kind"] for i in manifest["instruments"]}
+    assert sum(kinds[i] == "bond" for i in group["instruments"]) >= 2
 
 
 def test_index_weights_sum_100():

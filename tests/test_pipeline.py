@@ -282,3 +282,16 @@ def test_transport_error_aborts_run(conn):
     assert len(mcp.calls) == 1  # не долбим сервер по каждой бумаге
     row = conn.execute("SELECT finished_at, notes FROM ingest_runs").fetchone()
     assert row["finished_at"] and "прерван" in row["notes"]
+
+
+def test_young_paper_starts_from_listing_date(conn):
+    mcp = FakeMcp()
+    mcp.cards["SYN_A"]["instrument"]["first1dayCandleDate"] = "2024-01-05T07:00:00Z"
+    mcp.candle_days["SYN_A"] = ["2024-01-05", "2024-01-10"]
+    run_ingest(conn, mcp, ENTRIES[:1], since=date(2020, 1, 1), until=date(2024, 1, 10), mode="live")
+    froms = [a["from"] for n, a in mcp.calls if n == "invest_get_candles"]
+    assert froms == ["2024-01-05T00:00:00Z"]  # не запрашиваем годы до листинга
+    mcp.calls.clear()
+    run_ingest(conn, mcp, ENTRIES[:1], since=date(2020, 1, 1), until=date(2024, 1, 10), mode="live")
+    # история «короче since» из-за листинга — не повод для повторной догрузки
+    assert [a["from"] for n, a in mcp.calls if n == "invest_get_candles"] == []

@@ -1,8 +1,14 @@
 """Синтетический набор данных для тестов этапов 1–4.
 
 Цены строятся из факторной модели `r_i = β_i·Market + Σ γ_ik·Factor_k + ε_i`.
-Реальные тикеры не используются: все коды `SYN_*`. Даты фиксированы (500 рабочих дней
-от 2024-01-02), поэтому один и тот же seed даёт побайтно один и тот же набор.
+Реальные тикеры не используются: все коды `SYN_*`. Даты фиксированы (1500 рабочих дней
+от 2020-01-02, около 6 лет), поэтому один и тот же seed даёт побайтно один и тот же набор.
+
+В ряд встроены шоки: три эпизода (SHOCK_A, SHOCK_B, SHOCK_C) и отдельные дни резкого падения.
+В шоки рынок падает с повышенной волатильностью, и у каждого сектора (нефть, банки, металлы,
+технологии) появляется общий стресс-фактор: корреляции внутри секторов растут. Так устроен
+контрпример эксперта: «синтетический Сбер» (SYN_BANK1) и «синтетический ВТБ» (SYN_BANK2)
+слабо связаны в обычные дни и сильно в шоки, а в спокойные годы один растёт, другой падает.
 """
 
 from __future__ import annotations
@@ -24,10 +30,10 @@ from factorminus.mcp.allowlist import READ_ONLY_TOOLS
 from factorminus.mcp.cassette import Cassette
 from factorminus.mcp.client import META_TOOL, TOOLS_LIST_ARGS
 
-SYNTH_START = date(2024, 1, 2)
-N_DAYS = 500
+SYNTH_START = date(2020, 1, 2)
+N_DAYS = 1500
 INDEX_ID = "SYNIDX"
-FACTORS = ("market", "oil", "banks", "metals", "tech", "rate", "gold")
+FACTORS = ("market", "oil", "banks", "metals", "tech", "rate", "gold", "group")
 FACTOR_VOL = {
     "market": 0.012,
     "oil": 0.010,
@@ -36,7 +42,18 @@ FACTOR_VOL = {
     "tech": 0.012,
     "rate": 0.004,
     "gold": 0.008,
+    "group": 0.008,  # общий фактор группы компаний «Синт-Система»
 }
+MARKET_DRIFT = 0.0003
+STRESS_SECTORS = ("oil", "banks", "metals", "tech")
+# (id, первый день ряда доходностей, длина, средняя доходность рынка, вол. рынка, вол. стресса)
+SHOCKS: tuple[tuple[str, int, int, float, float, float], ...] = (
+    ("SHOCK_A", 40, 30, -0.012, 0.035, 0.025),
+    ("SHOCK_B", 560, 20, -0.015, 0.040, 0.030),
+    ("SHOCK_C", 1100, 150, -0.0025, 0.015, 0.012),  # затяжное плавное снижение
+)
+N_DROP_DAYS = 12
+DROP_MEAN, DROP_VOL, DROP_STRESS = -0.045, 0.01, 0.025
 TRACKING_NOISE = 0.0015
 FIND_ARGS_VIEW = ["IDENTIFIERS", "STATIC_DATA"]
 
@@ -54,6 +71,7 @@ class Spec:
     idio: float = 0.0
     p0: float = 100.0
     drift: float = 0.0
+    calm_drift: float = 0.0  # дополнительный дрейф только в обычные дни
     history_days: int = N_DAYS
     index: str | None = None
     maturity: str | None = None
@@ -78,7 +96,15 @@ BRANDS: dict[str, tuple[str, str, str, str]] = {
               "Крупнейший универсальный банк: кредиты, вклады, платежи. "
               "Обыкновенные и привилегированные акции."),
     "bank2": ("Банк Синт-Капитал", "ПАО «Банк Синт-Капитал»", "financial",
-              "Розничный и корпоративный банк."),
+              "Второй по величине государственный банк: розничный и корпоративный бизнес."),
+    "grp": ("Синт-Система", "ПАО АФК «Синт-Система»", "financial",
+            "Инвестиционный холдинг: телеком, лесопереработка, девелопмент."),
+    "grptel": ("СинтМобайл", "ПАО «СинтМобайл»", "telecom",
+               "Мобильная связь и цифровые сервисы."),
+    "grpfor": ("СинтЛес", "ПАО «СинтЛес»", "materials",
+               "Лесопромышленная компания: пиломатериалы, бумага, фанера."),
+    "grpdev": ("СинтСтрой", "ПАО «СинтСтрой»", "real_estate",
+               "Девелопер жилой недвижимости."),
     "met1": ("Синтметалл", "ПАО «Синтметалл»", "materials",
              "Производство стали и металлопроката."),
     "met2": ("Синтникель", "ПАО «Синтникель»", "materials",
@@ -107,6 +133,17 @@ BRANDS: dict[str, tuple[str, str, str, str]] = {
     "absent": ("Синт-Отсутствующая", "ПАО «Синт-Отсутствующая»", "industrials",
                "Машиностроительная компания (только в каталоге MCP, нет в базе)."),
 }  # fmt: skip
+
+# Группа компаний (слой 3): материнская компания и дочерние, включая облигации дочек.
+GROUPS: tuple[dict, ...] = (
+    {
+        "name": "Синт-Система",
+        "type": "ownership",
+        "parent_brand": "Синт-Система",
+        "member_brands": ["СинтМобайл", "СинтЛес", "СинтСтрой"],
+        "instruments": ["SYN_GRP", "SYN_GRPTEL", "SYN_GRPTEL_B", "SYN_GRPFOR_B", "SYN_GRPDEV_B"],
+    },
+)
 
 INDEX_WEIGHTS: dict[str, float] = {
     "SYN_OIL1": 15.0,
@@ -137,13 +174,15 @@ def _specs() -> list[Spec]:
         s.append(Spec(f"SYN_OIL{i}", "share", "share", BRANDS[f"oil{i}"][0], f"oil{i}",
                       {"market": b, "oil": g}, 0.009, 80 + 20 * i))  # fmt: skip
     s += [
+        # «синтетический Сбер»: в спокойные годы растёт
         Spec("SYN_BANK1", "share", "share", "Синтбанк ао", "bank1",
-             {"market": 1.1, "banks": 1.0, "rate": -0.5}, 0.007, 250),
+             {"market": 1.1, "banks": 1.0, "rate": -0.5}, 0.008, 250, calm_drift=0.0006),
         # префы того же эмитента: цена следует за обыкновенной акцией
         Spec("SYN_BANK1P", "share", "share", "Синтбанк ап", "bank1",
              p0=240, basket={"SYN_BANK1": 1.0}, noise=0.003),
+        # «синтетический ВТБ»: в спокойные годы падает
         Spec("SYN_BANK2", "share", "share", BRANDS["bank2"][0], "bank2",
-             {"market": 1.2, "banks": 0.9, "rate": -0.6}, 0.011, 0.03),
+             {"market": 1.1, "banks": 1.0, "rate": -0.6}, 0.008, 0.03, calm_drift=-0.0007),
         Spec("SYN_MET1", "share", "share", BRANDS["met1"][0], "met1",
              {"market": 0.9, "metals": 1.0}, 0.009, 1500),
         Spec("SYN_MET2", "share", "share", BRANDS["met2"][0], "met2",
@@ -158,6 +197,17 @@ def _specs() -> list[Spec]:
              {"market": 0.6, "rate": -0.3}, 0.008, 250),
         Spec("SYN_POWER1", "share", "share", BRANDS["pow1"][0], "pow1",
              {"market": 0.6, "rate": -0.4}, 0.009, 3.5),
+        # группа «Синт-Система»
+        Spec("SYN_GRP", "share", "share", "Синт-Система ао", "grp",
+             {"market": 1.0, "group": 1.0}, 0.012, 15.0),
+        Spec("SYN_GRPTEL", "share", "share", "СинтМобайл ао", "grptel",
+             {"market": 0.6, "group": 0.6, "rate": -0.3}, 0.008, 230.0),
+        Spec("SYN_GRPTEL_B", "bond", "corp_bond", "СинтМобайл 001P-02", "grptel",
+             {"rate": -0.6, "group": 0.15}, 0.001, 98.0, drift=0.0003, maturity="2028-11-15"),
+        Spec("SYN_GRPFOR_B", "bond", "corp_bond", "СинтЛес 002P-01", "grpfor",
+             {"rate": -0.6, "group": 0.3}, 0.002, 90.0, drift=0.0004, maturity="2029-03-10"),
+        Spec("SYN_GRPDEV_B", "bond", "corp_bond", "СинтСтрой 002P-01", "grpdev",
+             {"rate": -0.6, "group": 0.25}, 0.0015, 95.0, drift=0.0004, maturity="2028-02-03"),
         Spec("SYN_NEWCO", "share", "share", BRANDS["newco"][0], "newco",
              {"market": 1.3, "tech": 1.2}, 0.02, 50, history_days=40),
         Spec("SYN_ABSENT", "share", "share", BRANDS["absent"][0], "absent",
@@ -209,25 +259,54 @@ class SynthDataset:
         return self.dates[-1]
 
 
+def _regimes(rng: np.random.Generator, n: int) -> tuple[list[str], dict]:
+    """Режим каждого дня ряда доходностей: normal, SHOCK_A/B/C или drop."""
+    regime = ["normal"] * n
+    for sid, start, length, *_ in SHOCKS:
+        for t in range(start, start + length):
+            regime[t] = sid
+    busy = {t + d for t, r in enumerate(regime) if r != "normal" for d in range(-5, 6)}
+    candidates = [t for t in range(5, n) if t not in busy]
+    for t in sorted(rng.choice(candidates, N_DROP_DAYS, replace=False).tolist()):
+        regime[t] = "drop"
+    return regime, {sid: (start, length) for sid, start, length, *_ in SHOCKS}
+
+
 def generate(seed: int = 42) -> SynthDataset:
     rng = np.random.default_rng(seed)
     dates = business_days(SYNTH_START, N_DAYS)
     n = N_DAYS - 1
+    regime, _ = _regimes(rng, n)
+    shock = {sid: (mean, vol, svol) for sid, _, _, mean, vol, svol in SHOCKS}
+    m_mean, m_vol, s_vol = np.empty(n), np.empty(n), np.zeros(n)
+    for t, r in enumerate(regime):
+        if r == "normal":
+            m_mean[t], m_vol[t] = MARKET_DRIFT, FACTOR_VOL["market"]
+        elif r == "drop":
+            m_mean[t], m_vol[t], s_vol[t] = DROP_MEAN, DROP_VOL, DROP_STRESS
+        else:
+            m_mean[t], m_vol[t], s_vol[t] = shock[r]
     f = {k: rng.normal(0.0, FACTOR_VOL[k], n) for k in FACTORS}
+    f["market"] = m_mean + m_vol * rng.standard_normal(n)
+    stress = {k: s_vol * rng.standard_normal(n) for k in STRESS_SECTORS}
+    calm = np.array([r == "normal" for r in regime], dtype=float)
     specs = _specs()
     ret: dict[str, np.ndarray] = {}
     for sp in specs:  # сначала бумаги из факторов, потом корзины из них
         if sp.basket is None:
-            r = np.full(n, sp.drift)
+            r = np.full(n, sp.drift) + sp.calm_drift * calm
             for k, v in sp.loads.items():
                 r = r + v * f[k]
+                if k in stress:
+                    r = r + v * stress[k]
             ret[sp.id] = r + rng.normal(0.0, sp.idio, n)
     for sp in specs:
         if sp.basket is not None:
             r = sum(w * ret[i] for i, w in sp.basket.items())
             ret[sp.id] = r + rng.normal(0.0, sp.noise, n)
     candles = {sp.id: _ohlc(sp, dates, ret[sp.id], rng) for sp in specs}
-    return SynthDataset(seed, dates, specs, candles, _manifest(seed, dates, specs))
+    manifest = _manifest(seed, dates, specs, regime)
+    return SynthDataset(seed, dates, specs, candles, manifest)
 
 
 def _ohlc(sp: Spec, dates: list[date], r: np.ndarray, rng: np.random.Generator) -> list[dict]:
@@ -252,7 +331,7 @@ def _ohlc(sp: Spec, dates: list[date], r: np.ndarray, rng: np.random.Generator) 
     return rows[-sp.history_days :]
 
 
-def _manifest(seed: int, dates: list[date], specs: list[Spec]) -> dict:
+def _manifest(seed: int, dates: list[date], specs: list[Spec], regime: list[str]) -> dict:
     oils = [f"SYN_OIL{i}" for i in range(1, 6)]
     expected: list[dict] = [
         {"type": "corr_gte", "a": "SYN_IDXA", "b": "SYN_IDXB", "value": 0.95,
@@ -261,6 +340,25 @@ def _manifest(seed: int, dates: list[date], specs: list[Spec]) -> dict:
          "why": "скрытый дубль: тот же индекс без слова «индекс»"},
         {"type": "corr_gte", "a": "SYN_BANK1", "b": "SYN_BANK1P", "value": 0.85,
          "why": "обыкновенная и привилегированная акции одного эмитента"},
+        {"type": "resid_corr_between", "a": "SYN_BANK1", "b": "SYN_BANK2", "market": "SYN_IDXA",
+         "regime": "normal", "low": 0.3, "high": 0.5,
+         "why": "«Сбер» и «ВТБ» в обычные дни слабо связаны после вычета рынка"},
+        {"type": "corr_gte", "a": "SYN_BANK1", "b": "SYN_BANK2", "regime": "shock", "value": 0.8,
+         "why": "в шоки «Сбер» и «ВТБ» падают вместе"},
+        {"type": "calm_trend_opposite", "a": "SYN_BANK1", "b": "SYN_BANK2",
+         "why": "в спокойные дни один растёт, другой падает"},
+        {"type": "corr_gte", "a": "SYN_OIL1", "b": "SYN_OIL2", "regime": "shock", "value": 0.9,
+         "why": "в шоки корреляция внутри сектора растёт"},
+        {"type": "episode_drawdown_lte", "a": "SYN_IDXA", "episode": "SHOCK_A", "value": -0.2,
+         "why": "эпизод SHOCK_A: рынок падает больше чем на 20%"},
+        {"type": "episode_drawdown_lte", "a": "SYN_IDXA", "episode": "SHOCK_B", "value": -0.2,
+         "why": "эпизод SHOCK_B: рынок падает больше чем на 20%"},
+        {"type": "episode_drawdown_lte", "a": "SYN_IDXA", "episode": "SHOCK_C", "value": -0.15,
+         "why": "эпизод SHOCK_C: затяжное снижение рынка"},
+        {"type": "corr_gte", "a": "SYN_GRP", "b": "SYN_GRPTEL", "value": 0.5,
+         "why": "материнская и дочерняя компании группы «Синт-Система»"},
+        {"type": "corr_gte", "a": "SYN_GRPFOR_B", "b": "SYN_GRPDEV_B", "value": 0.5,
+         "why": "облигации дочерних компаний одной группы"},
         {"type": "corr_lte", "a": "SYN_GOLD", "b": "SYN_IDXA", "value": 0.1,
          "why": "золото не связано с рынком акций"},
         {"type": "vol_lte", "a": "SYN_MONEY", "value": 0.001,
@@ -279,7 +377,7 @@ def _manifest(seed: int, dates: list[date], specs: list[Spec]) -> dict:
     for i, a in enumerate(oils):
         for b in oils[i + 1 :]:
             expected.append({"type": "corr_between", "a": a, "b": b, "low": 0.6, "high": 0.8,
-                             "why": "нефтяные акции"})  # fmt: skip
+                             "regime": "normal", "why": "нефть в обычные дни"})  # fmt: skip
     return {
         "seed": seed,
         "generator": "factorminus.synth.generator",
@@ -290,7 +388,23 @@ def _manifest(seed: int, dates: list[date], specs: list[Spec]) -> dict:
             "factors": FACTOR_VOL,
             "tracking_noise": TRACKING_NOISE,
             "index_id": INDEX_ID,
+            "market_drift": MARKET_DRIFT,
+            "shocks": [
+                {
+                    "id": sid,
+                    "start": dates[start + 1].isoformat(),
+                    "end": dates[start + length].isoformat(),
+                    "days": length,
+                    "market_mean": mean,
+                    "market_vol": vol,
+                    "stress_vol": svol,
+                }
+                for sid, start, length, mean, vol, svol in SHOCKS
+            ],
+            "drop_days": [dates[t + 1].isoformat() for t, r in enumerate(regime) if r == "drop"],
+            "regime_note": "режим относится к доходности дня date (от закрытия предыдущего дня)",
         },
+        "groups": list(GROUPS),
         "instruments": [
             {
                 "id": sp.id,
@@ -421,7 +535,6 @@ def _write_cassettes(
         shutil.rmtree(root)
     cas = Cassette(root)
     by_id = {sp.id: sp for sp in ds.specs}
-    windows = candle_windows(SYNTH_START, ds.last_date)
     for sp in ds.specs:
         e = UniverseEntry(id=sp.id, kind=sp.kind, role=sp.role, index=sp.index)
         card = _card(sp)
@@ -441,7 +554,8 @@ def _write_cassettes(
         }
         cas.save("invest_get_asset", {"id": asset["uid"]}, {"asset": asset})
         cas.save("invest_get_brand", {"id": b["uid"]}, {"brand": b})
-        for frm, to in windows:
+        first = date.fromisoformat(ds.candles[sp.id][0]["date"])  # конвейер начинает с листинга
+        for frm, to in candle_windows(first, ds.last_date):
             lo, hi = frm[:10], to[:10]
             rows = [c for c in ds.candles[sp.id] if lo <= c["date"] < hi]
             payload = {
