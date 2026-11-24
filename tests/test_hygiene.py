@@ -116,5 +116,7 @@ def test_main_exit_codes(universe, capsys):
     make(universe, {".env": "x"})
     subprocess.run(["git", "init", "-q"], cwd=universe, check=True)
     subprocess.run(["git", "add", "-f", ".env", "data/universe.yaml"], cwd=universe, check=True)
-    assert hy.main(["--root", str(universe)]) == 1
+    summary = universe / "build" / "hygiene.md"
+    assert hy.main(["--root", str(universe), "--summary", str(summary)]) == 1
     assert "forbidden-path" in capsys.readouterr().out
+    assert "❌" in summary.read_text() and "`.env`: forbidden-path" in summary.read_text()

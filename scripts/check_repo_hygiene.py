@@ -124,16 +124,23 @@ def check(root: Path, files: list[str]) -> list[Violation]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--summary", type=Path, help="Markdown-секция для сводки CI")
     args = parser.parse_args(argv)
     files = git_files(args.root)
     violations = check(args.root, files)
     for v in violations:
         print(v)
     if violations:
-        print(f"Гигиена: {len(violations)} нарушений в {len(files)} файлах")
-        return 1
-    print(f"Гигиена: ок, проверено файлов: {len(files)}")
-    return 0
+        result = f"{len(violations)} нарушений в {len(files)} файлах"
+    else:
+        result = f"ок, проверено файлов: {len(files)}"
+    print(f"Гигиена: {result}")
+    if args.summary:
+        lines = ["### Гигиена репозитория", "", ("❌ " if violations else "✅ ") + result]
+        lines += [f"- `{v.path}`: {v.rule}" for v in violations[:20]]
+        args.summary.parent.mkdir(parents=True, exist_ok=True)
+        args.summary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return 1 if violations else 0
 
 
 if __name__ == "__main__":

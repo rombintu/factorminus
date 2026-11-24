@@ -19,8 +19,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ml = ["laya==0.5.1"]
-dev = ["pytest>=8", "ruff>=0.6"]
+# torch указан явно, чтобы на Linux брать CPU-сборку (см. [tool.uv.sources]): иначе образ
+# потянет CUDA на несколько гигабайт.
+ml = ["laya==0.5.1", "torch>=2.6"]
+dev = [
+  "pytest>=8",
+  "ruff>=0.6",
+  "pytest-cov>=5",
+  "pre-commit>=4",
+  "pip-audit>=2.7",
+  "uv>=0.5",
+]
 
 [project.scripts]
 fm = "factorminus.cli:run"
@@ -42,4 +51,17 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["tests"]
-markers = ["live: требует сети и реального токена (make test-live)"]
+markers = [
+  "live: требует сети и реального токена (make test-live)",
+  "ml: требует laya и весов модели (make test-ml, образ runtime-ml)",
+]
+
+# Lock-файлы requirements/*.txt: make lock (uv pip compile). Только инструмент компиляции,
+# ставятся они обычным pip.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
