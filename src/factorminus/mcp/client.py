@@ -18,7 +18,7 @@ from typing import Any
 import httpx
 
 from factorminus import __version__
-from factorminus.config import REPO_ROOT, Settings
+from factorminus.config import DATA_DIR, Settings
 from factorminus.mcp.allowlist import ensure_allowed
 from factorminus.mcp.cassette import MODES, Cassette, Mode
 from factorminus.mcp.errors import McpError, McpToolError, McpTransportError
@@ -29,7 +29,7 @@ PROTOCOL_VERSION = "2025-03-26"
 TIMEOUT_S = 30.0
 META_TOOL = "_meta"
 TOOLS_LIST_ARGS = {"method": "tools/list"}
-DEFAULT_CASSETTE_DIR = REPO_ROOT / "data" / "cassettes"
+DEFAULT_CASSETTE_DIR = DATA_DIR / "cassettes"
 MAX_ERROR_LEN = 300
 MAX_RETRY_AFTER_S = 30.0
 RATE_LIMITED_BACKOFF_S = 5.0  # базовая пауза после 429 без Retry-After

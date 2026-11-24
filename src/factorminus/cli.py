@@ -14,7 +14,7 @@ from typing import Annotated, Any
 import httpx
 import typer
 
-from factorminus.config import REPO_ROOT, ConfigError, Settings, load_settings
+from factorminus.config import CONFIG_DIR, DATA_DIR, REPO_ROOT, ConfigError, Settings, load_settings
 from factorminus.mcp.errors import McpError
 
 app = typer.Typer(
@@ -38,7 +38,7 @@ for name, sub in [
 
 ModeOpt = Annotated[str, typer.Option("--mode", help="live | record | replay")]
 DbOpt = Annotated[Path | None, typer.Option("--db", help="Путь к SQLite (по умолчанию FM_DB_PATH)")]
-UNIVERSE_PATH = REPO_ROOT / "data" / "universe.yaml"
+UNIVERSE_PATH = CONFIG_DIR / "universe.yaml"
 
 
 @app.callback()
@@ -83,10 +83,10 @@ def _client(settings: Settings, mode: str = "live", cassette_dir: Path | None = 
     from factorminus.mcp.client import DEFAULT_CASSETTE_DIR, McpClient
 
     cassette_dir = (cassette_dir or DEFAULT_CASSETTE_DIR).resolve()
-    data_dir = (REPO_ROOT / "data").resolve()
+    data_dir = settings.data_dir.resolve()
     if mode == "record" and not cassette_dir.is_relative_to(data_dir):
         typer.echo(
-            f"Внимание: кассеты с реальными ответами пишутся вне data/ ({cassette_dir}). "
+            f"Внимание: кассеты с реальными ответами пишутся вне {data_dir} ({cassette_dir}). "
             "Не коммитьте их.",
             err=True,
         )
@@ -220,7 +220,7 @@ def universe_verify(
     entries = load_universe(path)
     with _client(_settings(), mode=mode) as client:
         report = verify_universe(client, entries)
-    out = REPO_ROOT / "data" / "universe_resolved.json"
+    out = _settings().data_dir / "universe_resolved.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     typer.echo(
@@ -390,7 +390,7 @@ def synth_generate(
 @synth_app.command("load")
 @friendly_errors
 def synth_load(
-    db: Annotated[Path, typer.Option("--db")] = REPO_ROOT / "data" / "fm_synth.sqlite",
+    db: Annotated[Path, typer.Option("--db")] = DATA_DIR / "fm_synth.sqlite",
     fixtures: Annotated[Path, typer.Option()] = SYNTH_DIR,
 ) -> None:
     """Загрузить синтетику в SQLite через конвейер в режиме replay (без сети)."""

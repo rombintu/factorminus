@@ -13,8 +13,16 @@ from urllib.parse import urlparse
 
 DEFAULT_MCP_URL = "https://invest-public-api.tbank.ru/mcp"
 DEFAULT_DB_PATH = "data/fm.sqlite"
+DB_FILENAME = "fm.sqlite"
 ALLOWED_MCP_HOST_SUFFIX = "tbank.ru"
 _TOKEN_RE = re.compile(r"^[\x21-\x7e]+$")
+
+
+def _clean(value: str | None) -> str | None:
+    if value is None:
+        return None
+    value = value.strip()
+    return value or None
 
 
 def _find_repo_root() -> Path:
@@ -25,7 +33,37 @@ def _find_repo_root() -> Path:
     return Path.cwd()
 
 
-REPO_ROOT = _find_repo_root()
+def repo_root(env: Mapping[str, str] | None = None) -> Path:
+    """Корень проекта: `FM_HOME`, иначе каталог с `pyproject.toml` над пакетом.
+
+    При обычной (не editable) установке, например в Docker-образе, `pyproject.toml` рядом
+    с пакетом нет, поэтому корень задаётся явно.
+    """
+    env = os.environ if env is None else env
+    home = _clean(env.get("FM_HOME"))
+    return Path(home).resolve() if home else _find_repo_root()
+
+
+def data_dir(env: Mapping[str, str] | None = None, root: Path | None = None) -> Path:
+    """Каталог данных времени выполнения: SQLite, кассеты record, отчёты проверок.
+
+    `FM_DATA_DIR` (относительный путь — от корня), иначе `<корень>/data`. Файлы из git
+    (`universe.yaml` и другие конфиги) читаются из `CONFIG_DIR`, а не отсюда: в контейнере
+    это разные места, и том с данными не закрывает конфигурацию из образа.
+    """
+    env = os.environ if env is None else env
+    root = repo_root(env) if root is None else root
+    value = _clean(env.get("FM_DATA_DIR"))
+    if not value:
+        return root / "data"
+    path = Path(value)
+    return path if path.is_absolute() else root / path
+
+
+REPO_ROOT = repo_root()
+DATA_DIR = data_dir(root=REPO_ROOT)
+# Конфигурация из git (только чтение): universe.yaml, позже groups.yaml и другие.
+CONFIG_DIR = REPO_ROOT / "data"
 
 
 class ConfigError(Exception):
@@ -56,13 +94,6 @@ def _read_dotenv(path: Path) -> dict[str, str]:
     return out
 
 
-def _clean(value: str | None) -> str | None:
-    if value is None:
-        return None
-    value = value.strip()
-    return value or None
-
-
 @dataclass(frozen=True)
 class Settings:
     token: str | None = field(repr=False)
@@ -70,12 +101,13 @@ class Settings:
     ca_bundle: str | None = None
     insecure_ssl: bool = False
     db_path: Path = Path(DEFAULT_DB_PATH)
+    data_dir: Path = Path("data")
 
     def __repr__(self) -> str:
         return (
             f"Settings(token={mask_secret(self.token)}, mcp_url={self.mcp_url!r}, "
             f"ca_bundle={self.ca_bundle!r}, insecure_ssl={self.insecure_ssl}, "
-            f"db_path={str(self.db_path)!r})"
+            f"db_path={str(self.db_path)!r}, data_dir={str(self.data_dir)!r})"
         )
 
     __str__ = __repr__
@@ -143,14 +175,20 @@ def load_settings(env: Mapping[str, str] | None = None, env_file: Path | None = 
         value = _clean(env.get(key))
         return value if value is not None else _clean(dotenv.get(key))
 
-    db = get("FM_DB_PATH") or DEFAULT_DB_PATH
-    db_path = Path(db)
-    if not db_path.is_absolute():
-        db_path = REPO_ROOT / db_path
+    # FM_HOME и FM_DATA_DIR берутся только из окружения: от них зависит, где искать .env.
+    rw = data_dir(env, root=REPO_ROOT)
+    db = get("FM_DB_PATH")
+    if db:
+        db_path = Path(db)
+        if not db_path.is_absolute():
+            db_path = REPO_ROOT / db_path
+    else:
+        db_path = rw / DB_FILENAME
     return Settings(
         token=get("TINVEST_TOKEN"),
         mcp_url=_check_mcp_url(get("TINVEST_MCP_URL") or DEFAULT_MCP_URL),
         ca_bundle=_resolve(get("TINVEST_CA_BUNDLE")),
         insecure_ssl=get("TINVEST_INSECURE_SSL") == "1",
         db_path=db_path,
+        data_dir=rw,
     )

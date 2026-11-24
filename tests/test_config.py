@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from factorminus.config import (
@@ -132,3 +134,81 @@ def test_relative_ca_bundle_resolved_from_repo_root(tmp_path):
 
     s = load_settings(env={"TINVEST_CA_BUNDLE": "data/ca/x.pem"}, env_file=tmp_path / "x")
     assert s.ca_bundle == str(REPO_ROOT / "data/ca/x.pem")
+
+
+# --- FM_HOME / FM_DATA_DIR ---
+
+
+def test_repo_root_from_fm_home(tmp_path):
+    from factorminus.config import repo_root
+
+    assert repo_root({"FM_HOME": str(tmp_path)}) == tmp_path
+
+
+def test_repo_root_default_is_project_with_pyproject():
+    from factorminus.config import repo_root
+
+    assert (repo_root({}) / "pyproject.toml").is_file()
+
+
+def test_data_dir_default_is_root_data(tmp_path):
+    from factorminus.config import data_dir
+
+    assert data_dir({}, root=tmp_path) == tmp_path / "data"
+
+
+def test_data_dir_absolute_and_relative(tmp_path):
+    from factorminus.config import data_dir
+
+    assert data_dir({"FM_DATA_DIR": "/var/lib/fm"}, root=tmp_path) == Path("/var/lib/fm")
+    assert data_dir({"FM_DATA_DIR": "runtime"}, root=tmp_path) == tmp_path / "runtime"
+
+
+def test_db_path_defaults_to_data_dir(tmp_path):
+    s = load_settings(env={"FM_DATA_DIR": str(tmp_path / "rw")}, env_file=tmp_path / "x")
+    assert s.db_path == tmp_path / "rw" / "fm.sqlite"
+    assert s.data_dir == tmp_path / "rw"
+
+
+def test_fm_db_path_wins_over_data_dir(tmp_path):
+    s = load_settings(
+        env={"FM_DATA_DIR": str(tmp_path / "rw"), "FM_DB_PATH": str(tmp_path / "x.sqlite")},
+        env_file=tmp_path / "x",
+    )
+    assert s.db_path == tmp_path / "x.sqlite"
+
+
+def test_without_variables_paths_unchanged(tmp_path):
+    from factorminus.config import REPO_ROOT
+
+    s = load_settings(env={}, env_file=tmp_path / "x")
+    assert s.db_path == REPO_ROOT / "data" / "fm.sqlite"
+    assert s.data_dir == REPO_ROOT / "data"
+
+
+def test_module_constants_follow_environment(tmp_path):
+    """Как в контейнере: пакет вне репозитория, корень и данные из переменных."""
+    import subprocess
+    import sys
+
+    home, rw = tmp_path / "app", tmp_path / "rw"
+    code = (
+        "from factorminus import config, cli\n"
+        "from factorminus.mcp import client\n"
+        "print(config.REPO_ROOT, config.DATA_DIR, config.CONFIG_DIR, sep='\\n')\n"
+        "print(cli.UNIVERSE_PATH, cli.SYNTH_DIR, client.DEFAULT_CASSETTE_DIR, sep='\\n')\n"
+        "print(config.load_settings().db_path)\n"
+    )
+    env = {"PATH": "/usr/bin:/bin", "FM_HOME": str(home), "FM_DATA_DIR": str(rw)}
+    out = subprocess.run(
+        [sys.executable, "-c", code], env=env, capture_output=True, text=True, check=True
+    ).stdout.split("\n")
+    assert out[:7] == [
+        str(home),
+        str(rw),
+        str(home / "data"),
+        str(home / "data" / "universe.yaml"),
+        str(home / "tests" / "fixtures" / "synthetic"),
+        str(rw / "cassettes"),
+        str(rw / "fm.sqlite"),
+    ]
