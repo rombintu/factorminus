@@ -208,7 +208,8 @@ No known vulnerabilities found       (×3)
 - Как laya хранит веса: `Router` берёт три чекпойнта (english, multilingual, typed-decisions) из одного репозитория Hugging Face `convaiinnovations/laya` (`laya.router.BUNDLE_REPO`, подпапки) через кэш `huggingface_hub` в `$HF_HOME/hub`. Формат — `safetensors`.
 - В образ снимок кладётся при сборке через `snapshot_download` закреплённой ревизии `fd4f9dbc…` (`LAYA_REVISION`), без загрузки моделей в память. Затем `HF_HOME=/opt/hf`, `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`.
 - Проверка без сети: `docker run --network none factorminus:test-ml` → `Router().predict(...)` на русском тексте — `multilingual share` (и `fund` 0,96 на описании фонда). Сетевых обращений нет.
-- `make docker-test-ml` (`Router(preload=True)`, три модели сразу) локально завершился кодом 137 (OOM): Docker Desktop здесь выделено 3,8 ГБ RAM. На раннере GitHub 16 ГБ, тест запускается в `ml.yml`. Результата прогона в CI пока нет: ветка не запушена.
+- `make docker-test-ml` (`Router(preload=True)`, три модели сразу) локально завершился кодом 137 (OOM): Docker Desktop здесь выделено 3,8 ГБ RAM.
+- В CI ([прогон `ml.yml`](https://github.com/rombintu/factorminus/actions/runs/45469093975), раннер ubuntu-24.04, сеть в тесте заблокирована): `tests/test_ml_smoke.py` — `1 passed, 1 warning in 9.42s`. Сборка `runtime-ml` на amd64 с холодным кэшем — 13 мин 10 с.
 
 ## Критерии приёмки
 
@@ -235,7 +236,7 @@ No known vulnerabilities found       (×3)
 | Образ `runtime` | 239 МБ (`docker image inspect … .Size`, arm64; в `docker image ls` — 251 МБ) |
 | Образ `runtime-ml` | 3413 МБ: torch CPU 688 МБ, веса laya 2,3 ГБ |
 | Сборка `runtime` с нуля | 7 мин 25 с, почти всё время — скачивание базового образа через медленный прокси Docker Hub; повторная сборка с кэшем — 11 с |
-| Сборка `runtime-ml` | 252 с (с кэшем зависимостей) и 457 с (после смены слоя зависимостей: заново torch и 2,2 ГБ весов) |
+| Сборка `runtime-ml` | локально (arm64): 252 с с кэшем зависимостей, 457 с после смены слоя зависимостей; CI (amd64, холодный кэш): 13 мин 10 с |
 | `make docker-test` | тесты в контейнере 5,9 с |
 | `nightly` с нуля | 4 мин 3 с (75 бумаг, 123 177 свечей, равномерный лимит MCP) |
 | Покрытие | 91,41%, порог `COV_MIN=89` (91 − 2) |
@@ -285,7 +286,7 @@ No known vulnerabilities found       (×3)
 ## Открытые вопросы
 
 1. **PR.** По решению пользователя коммиты этапа 1.5 добавлены в PR #1 (ветка `stage-1`, fast-forward), отдельного PR нет. Публикацию `:main` в GHCR можно проверить только после merge.
-2. **`ml.yml`** на момент записи ещё выполнялся; результат — на странице PR (проверка `ml`, merge не блокирует).
+2. **`ml.yml` на PR запускается при каждом push:** фильтр `paths` для `pull_request` сравнивает весь diff PR с базой, а в нём есть `Dockerfile`; новый push отменяет предыдущий прогон (около 16 минут). На следующих этапах, когда `Dockerfile` не меняется, `ml` будет запускаться только по расписанию и вручную.
 3. **Защита `main` и видимость пакета GHCR** — настройки репозитория, инструкция и команда в `docs/CI.md`, не применялись.
-4. **ML smoke `Router(preload=True)`** локально не помещается в 3,8 ГБ Docker Desktop; для `fm-ml` нужно не меньше 8 ГБ (`docs/DEPLOY.md`). Первый настоящий прогон — `ml.yml` на GitHub.
+4. **ML smoke `Router(preload=True)`** локально не помещается в 3,8 ГБ Docker Desktop; для `fm-ml` нужно не меньше 8 ГБ (`docs/DEPLOY.md`). В CI тест проходит.
 5. **`docs/tz/STAGE_2.md`** не закоммичен: он не относится к этапу 1.5.
