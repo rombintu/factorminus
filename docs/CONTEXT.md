@@ -100,6 +100,16 @@ ISS Мосбиржи ─┘ (сырые    (данные)   look-through (в Б�
   - `invest_get_risk_rates`: `{"instrumentId": [..]}`.
   - `invest_find_instrument`: `{"query": "TMOS", "instrumentKind": "INSTRUMENT_TYPE_ETF", "responseView": ["IDENTIFIERS","STATIC_DATA"]}`.
   - `invest_list_etfs`, `invest_list_shares`, `invest_list_bonds`: полные каталоги (большие ответы, ограничивай `responseView`).
+- **Уточнения по итогам этапа 1 (проверено на живом сервере):**
+  - фонды торгуются и получают свечи в классе `TQBR` (`TMOS_TQBR`); в `TQTF` свечей в 2026 году нет;
+  - `invest_list_etfs` неполный (TMOS в нём нет), искать через `invest_find_instrument`;
+  - в карточке бумаги нет `uid`, он приходит в ставках риска;
+  - ставки риска — списки по уровням риска;
+  - даты свечей и погашения облигаций приходят без времени;
+  - MCP отдаёт свечи торгов выходного дня; для расчётов берём только будни;
+  - у части фондов пустой сектор бренда, у AMIX нет бренда;
+  - лимит соблюдается равномерным интервалом 0,33 с, всплески дают 429;
+  - TLS: CA-бандл НУЦ Минцифры `data/ca/ru-bundle.pem` (отпечатки сверены с Госуслугами 24.11.2026), путь в `.env` как `TINVEST_CA_BUNDLE`.
 - **Состав фонда MCP не отдаёт.** `invest_get_asset_fundamentals` для фонда пустой.
 - Цепочка для профиля бумаги: `get_share|etf|bond` → `assetUid` → `get_asset` → `brand.uid` → `get_brand` (сектор и описание).
 
@@ -124,11 +134,11 @@ ISS Мосбиржи ─┘ (сырые    (данные)   look-through (в Б�
 ```json
 {
   "portfolio": {
-    "positions": [{"instrument_id": "TMOS_TQTF", "value_rub": 270000}],
+    "positions": [{"instrument_id": "TMOS_TQBR", "value_rub": 270000}],
     "cash_rub": 30000
   },
   "operation": "buy",
-  "instrument_id": "SBMX_TQTF",
+  "instrument_id": "SBMX_TQBR",
   "amount_rub": 50000
 }
 ```
@@ -141,7 +151,7 @@ ISS Мосбиржи ─┘ (сырые    (данные)   look-through (в Б�
   "severity": "warning",
   "headline": "SBMX повторяет тот же индекс, что ваш TMOS",
   "facts": ["Корреляция дневных доходностей за 12 мес: 0,92", "После покупки 100% акций в портфеле — один индекс"],
-  "overlaps": [{"instrument_id": "TMOS_TQTF", "kind": "same_index", "correlation": 0.92, "duplicate_score": 0.98}],
+  "overlaps": [{"instrument_id": "TMOS_TQBR", "kind": "same_index", "correlation": 0.92, "duplicate_score": 0.98}],
   "factors_before": {"broad_market_ru": 90.0, "cash": 10.0},
   "factors_after":  {"broad_market_ru": 93.3, "cash": 6.7},
   "issuers_before": {"Сбер": 13.1},
