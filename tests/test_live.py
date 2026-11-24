@@ -56,3 +56,44 @@ def test_iss_imoex_weights():
     rows = fetch_index_weights("IMOEX", verify=load_settings().ssl_verify())
     assert len(rows) >= 30
     assert sum(r["weight"] for r in rows) == pytest.approx(100, abs=0.5)
+
+
+def _issuer(client, iid, kind, tool):
+    from factorminus.ingest.issuer import pick_issuer
+
+    entry = UniverseEntry(id=iid, kind=kind, role="share" if kind == "share" else "corp_bond")
+    row = parse_instrument(client.call_tool(tool, instrument_args(entry)), kind)
+    asset = parse_asset(client.call_tool("invest_get_asset", {"id": row["asset_uid"]}))
+    brand = parse_brand(client.call_tool("invest_get_brand", {"id": asset["brand_uid"]}))
+    return asset["brand_uid"], pick_issuer(
+        override=None, kind=kind, brand_name=brand["name"], brand_company=brand["company"]
+    )[1]
+
+
+@pytest.mark.parametrize(
+    "a,b",
+    [
+        (("SBER_TQBR", "share", "invest_get_share"), ("SBERP_TQBR", "share", "invest_get_share")),
+        (
+            ("MTSS_TQBR", "share", "invest_get_share"),
+            ("RU000A1078S8_TQCB", "bond", "invest_get_bond"),
+        ),
+    ],
+    ids=["SBER-SBERP", "MTSS-bond"],
+)
+def test_same_issuer_different_brand_live(client, a, b):
+    brand_a, issuer_a = _issuer(client, *a)
+    brand_b, issuer_b = _issuer(client, *b)
+    assert brand_a != brand_b
+    assert issuer_a == issuer_b is not None
+
+
+def test_imoex_index_candles_live(client):
+    from factorminus.ingest.index_candles import INDEX_SOURCES
+
+    payload = client.call_tool(
+        "invest_get_candles",
+        candle_args(INDEX_SOURCES["IMOEX"], "2020-01-01T00:00:00Z", "2020-02-01T00:00:00Z"),
+    )
+    rows = parse_candles(payload)
+    assert rows and rows[0]["date"] == "2020-01-03" and rows[0]["close"] > 1000
