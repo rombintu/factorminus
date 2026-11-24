@@ -87,22 +87,130 @@ def test_real_tickers_in_fixtures(universe):
     files = make(
         universe,
         {
-            "tests/fixtures/x/candles.csv": "SYN_A,1\nSBER_TQBR,250.1\n",
-            "tests/fixtures/x/prices.json": '{"ticker": "TMOS", "close": 7.1}',
-            "tests/fixtures/x/ok.json": '{"ticker": "SYN_TMOS", "id": "SYNIDX_INDEX"}',
-            "tests/test_live.py": 'ids = ["SBER_TQBR"]\n',  # вне fixtures — не проверяется
+            "tests/fixtures/synthetic/candles.csv": "SYN_A,1\nSBER_TQBR,250.1\n",
+            "tests/fixtures/synthetic/prices.json": '{"ticker": "TMOS", "close": 7.1}',
+            "tests/fixtures/synthetic/ok.json": '{"ticker": "SYN_TMOS", "id": "SYNIDX_INDEX"}',
+            "tests/fixtures/x/readme.txt": "SBER_TQBR",  # не файл данных, но в fixtures
+            "tests/test_live.py": 'ids = ["SBER_TQBR"]\n',  # код тестов — не проверяется
         },
     )
     got = rules(hy.check(universe, files + ["data/universe.yaml"]))
     assert got == {
-        ("tests/fixtures/x/candles.csv", "real-ticker-in-fixture"),
-        ("tests/fixtures/x/prices.json", "real-ticker-in-fixture"),
+        ("tests/fixtures/synthetic/candles.csv", "real-ticker-in-data"),
+        ("tests/fixtures/synthetic/prices.json", "real-ticker-in-data"),
+        ("tests/fixtures/x/readme.txt", "real-ticker-in-data"),
     }
 
 
-def test_fixture_exception_list(universe, monkeypatch):
-    files = make(universe, {"tests/fixtures/x/m.json": '"как TMOS"'})
-    monkeypatch.setitem(hy.FIXTURE_EXCEPTIONS, "tests/fixtures/x/m.json", "пример без цен")
+def test_ticker_exception_list(universe, monkeypatch):
+    files = make(universe, {"tests/fixtures/synthetic/m.json": '"как TMOS"'})
+    monkeypatch.setitem(hy.TICKER_EXCEPTIONS, "tests/fixtures/synthetic/m.json", "пример без цен")
+    assert hy.check(universe, files + ["data/universe.yaml"]) == []
+
+
+# Случаи, которые гигиена этапа 1.5 пропускала (ревью 1.5, п. 1)
+MCP_CANDLES = (
+    '{"candles": [{"time": "2024-01-03T07:00:00Z", "close": {"units": "271", "nano": 5e8}}],'
+    ' "instrumentUid": "e6123145-9665-43e0-8413-cd61b8aa9b13", "ticker": "SBER_TQBR"}'
+)
+
+
+@pytest.mark.parametrize(
+    ("path", "content", "rule"),
+    [
+        ("docs/real_prices.csv", "2024-01-03,SBER_TQBR,271.5\n", "data-file-outside-allowlist"),
+        ("analysis/candles.csv", "SBER,271.5\n", "data-file-outside-allowlist"),
+        ("tests/cassettes/invest_get_candles.json", MCP_CANDLES, "data-file-outside-allowlist"),
+        ("tests/cassettes/invest_get_candles.json", MCP_CANDLES, "mcp-response"),
+        ("data/fm.sqlite.bak", "x", "data-not-yaml"),
+        ("tests/fixtures/synthetic/x.csv", "SBER 271\n", "real-ticker-in-data"),
+    ],
+)
+def test_review_cases_caught(universe, path, content, rule):
+    files = make(universe, {path: content}) + ["data/universe.yaml"]
+    assert (path, rule) in rules(hy.check(universe, files))
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "x.tsv",
+        "a/b.jsonl",
+        "out.parquet",
+        "out.feather",
+        "report.xlsx",
+        "m.pkl",
+        "m.pickle",
+        "arr.npz",
+        "arr.npy",
+        "local.db",
+        "tests/fixtures/real/prices.json",  # вне synthetic
+        "docs/contract.json",  # не в docs/contract/
+    ],
+)
+def test_data_extensions_outside_allowlist(universe, path):
+    files = make(universe, {path: "1"}) + ["data/universe.yaml"]
+    assert (path, "data-file-outside-allowlist") in rules(hy.check(universe, files))
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "tests/fixtures/synthetic/a.csv",
+        "tests/cases/sma/case.json",
+        "docs/contract/examples/x.json",
+        "src/factorminus/schema.yaml",  # yaml не файл данных
+    ],
+)
+def test_data_files_allowed_in_allowlist(universe, path):
+    files = make(universe, {path: "SYN_A,1\n"}) + ["data/universe.yaml"]
+    assert hy.check(universe, files) == []
+
+
+def test_data_file_exception_with_reason(universe, monkeypatch):
+    files = make(universe, {"bench/results.json": "{}"}) + ["data/universe.yaml"]
+    monkeypatch.setitem(hy.DATA_FILE_EXCEPTIONS, "bench/results.json", "только время, без цен")
+    assert hy.check(universe, files) == []
+
+
+@pytest.mark.parametrize("folder", ["tests/fixtures/synthetic", "tests/cases/x", "docs/contract"])
+def test_real_tickers_checked_in_all_data_dirs(universe, folder):
+    path = f"{folder}/q.json"
+    files = make(universe, {path: '{"id": "TMOS"}'}) + ["data/universe.yaml"]
+    assert (path, "real-ticker-in-data") in rules(hy.check(universe, files))
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        '{"figi": "BBG004730N88"}',
+        '{"assetUid": "40d89385-a03a-4659-bf4e-d3ecba011782"}',
+        '{"positionUid": "41eb2102-5333-4713-bf15-72b204c4bf7b"}',
+        '{"brandUid": 5}',
+        'instrumentUid: "e6123145"\n"instrumentUid": "e6123145"',
+        '{"candles": [], "x": {"close": 1}}',
+    ],
+)
+def test_mcp_keys_caught_in_non_code_files(universe, content):
+    files = make(universe, {"notes/dump.txt": content}) + ["data/universe.yaml"]
+    assert ("notes/dump.txt", "mcp-response") in rules(hy.check(universe, files))
+
+
+def test_mcp_keys_allowed_in_code_and_synthetic(universe):
+    files = make(
+        universe,
+        {
+            "src/factorminus/mcp/parse.py": 'u = x["instrumentUid"]; c = r["candles"]["close"]\n',
+            "tests/test_parse.py": 'RESP = {"figi": "BBG004730N88"}\n',
+            "docs/MCP.md": '`"assetUid"`, `"candles"` и `"close"`\n',
+            # синтетика повторяет форму ответа MCP, значения начинаются с syn-
+            "tests/fixtures/synthetic/instruments.json": (
+                '[{"assetUid": "syn-asset-a", "brandUid": "syn-brand-a", "positionUid": "syn-p"},'
+                ' {"assetUid": "syn-asset-b", "brandUid": null}]'
+            ),
+            "docs/contract/examples/n.json": '{"data_as_of": {"candles": "2025-12-01"}}',
+        },
+    )
     assert hy.check(universe, files + ["data/universe.yaml"]) == []
 
 

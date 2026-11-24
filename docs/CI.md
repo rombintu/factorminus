@@ -17,7 +17,7 @@
 |---|---|---|
 | `lint` | `make lint` (ruff check + format --check), `make lint-docker` (actionlint, hadolint) | да |
 | `test` | `make test-cov`: pytest офлайн, покрытие с порогом `COV_MIN` | да |
-| `hygiene` | `make hygiene` (`scripts/check_repo_hygiene.py`), `make gitleaks` по всей истории | да |
+| `hygiene` | `make hygiene` (`scripts/check_repo_hygiene.py`): секреты, `.env`, SQLite; файлы данных (`csv`, `json`, `parquet`, `db` и т. п.) только в `tests/fixtures/synthetic/`, `tests/cases/`, `docs/contract/`; там же нет реальных тикеров; в файлах, кроме `.py` и `.md`, нет ключей ответа MCP. `make gitleaks` по всей истории | да |
 | `lockfiles` | `make lock-check`: перекомпиляция lock-файлов не даёт diff; общие пакеты в `dev.txt` и `ml.txt` закреплены одинаково | да |
 | `contract` | `make contract-check`: схемы в `docs/contract/` совпадают с кодом, набор файлов тот же | да |
 | `docker` | сборка `runtime` и `test`, `make docker-test-run`, `make docker-demo` (smoke на синтетике без `.env`), `make docker-check` | да |
