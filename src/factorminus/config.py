@@ -12,8 +12,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 DEFAULT_MCP_URL = "https://invest-public-api.tbank.ru/mcp"
-DEFAULT_DB_PATH = "data/fm.sqlite"
 DB_FILENAME = "fm.sqlite"
+DEFAULT_DB_PATH = f"data/{DB_FILENAME}"  # относительно корня, если FM_DATA_DIR не задан
 ALLOWED_MCP_HOST_SUFFIX = "tbank.ru"
 _TOKEN_RE = re.compile(r"^[\x21-\x7e]+$")
 
@@ -100,8 +100,8 @@ class Settings:
     mcp_url: str = DEFAULT_MCP_URL
     ca_bundle: str | None = None
     insecure_ssl: bool = False
-    db_path: Path = Path(DEFAULT_DB_PATH)
-    data_dir: Path = Path("data")
+    db_path: Path = DATA_DIR / DB_FILENAME
+    data_dir: Path = DATA_DIR
 
     def __repr__(self) -> str:
         return (
@@ -161,33 +161,36 @@ def _check_mcp_url(url: str) -> str:
     return url
 
 
-def _resolve(path: str | None) -> str | None:
+def _resolve(path: str | None, root: Path) -> str | None:
     if path is None or Path(path).is_absolute():
         return path
-    return str(REPO_ROOT / path)
+    return str(root / path)
 
 
 def load_settings(env: Mapping[str, str] | None = None, env_file: Path | None = None) -> Settings:
     env = os.environ if env is None else env
-    dotenv = _read_dotenv(env_file if env_file is not None else REPO_ROOT / ".env")
+    # Корень — из того же env (FM_HOME), что и остальные переменные: от него считаются .env,
+    # FM_DATA_DIR, относительные FM_DB_PATH и TINVEST_CA_BUNDLE.
+    root = repo_root(env)
+    dotenv = _read_dotenv(env_file if env_file is not None else root / ".env")
 
     def get(key: str) -> str | None:
         value = _clean(env.get(key))
         return value if value is not None else _clean(dotenv.get(key))
 
     # FM_HOME и FM_DATA_DIR берутся только из окружения: от них зависит, где искать .env.
-    rw = data_dir(env, root=REPO_ROOT)
+    rw = data_dir(env, root=root)
     db = get("FM_DB_PATH")
     if db:
         db_path = Path(db)
         if not db_path.is_absolute():
-            db_path = REPO_ROOT / db_path
+            db_path = root / db_path
     else:
         db_path = rw / DB_FILENAME
     return Settings(
         token=get("TINVEST_TOKEN"),
         mcp_url=_check_mcp_url(get("TINVEST_MCP_URL") or DEFAULT_MCP_URL),
-        ca_bundle=_resolve(get("TINVEST_CA_BUNDLE")),
+        ca_bundle=_resolve(get("TINVEST_CA_BUNDLE"), root),
         insecure_ssl=get("TINVEST_INSECURE_SSL") == "1",
         db_path=db_path,
         data_dir=rw,

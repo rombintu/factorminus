@@ -212,3 +212,45 @@ def test_module_constants_follow_environment(tmp_path):
         str(rw / "cassettes"),
         str(rw / "fm.sqlite"),
     ]
+
+
+def test_load_settings_uses_fm_home_from_env(tmp_path):
+    """Корень берётся из переданного env, а не из модульного REPO_ROOT (ревью 1.5, п. 6.2)."""
+    home = tmp_path / "home"
+    home.mkdir()
+    (home / ".env").write_text("TINVEST_TOKEN=t.fake-home\n", encoding="utf-8")
+    s = load_settings(env={"FM_HOME": str(home)})
+    assert s.token == "t.fake-home"  # .env из FM_HOME
+    assert s.data_dir == home / "data"
+    assert s.db_path == home / "data" / "fm.sqlite"
+
+    s = load_settings(
+        env={
+            "FM_HOME": str(home),
+            "FM_DATA_DIR": "rw",
+            "FM_DB_PATH": "db/x.sqlite",
+            "TINVEST_CA_BUNDLE": "certs/ca.pem",
+        }
+    )
+    assert s.data_dir == home / "rw"
+    assert s.db_path == home / "db" / "x.sqlite"
+    assert s.ca_bundle == str(home / "certs" / "ca.pem")
+
+
+def test_settings_defaults_follow_data_dir():
+    """Settings() без путей не зависит от текущей папки (ревью 1.5, п. 6.3)."""
+    from factorminus.config import DATA_DIR, Settings
+
+    s = Settings(token=None)
+    assert s.data_dir == DATA_DIR
+    assert s.db_path == DATA_DIR / "fm.sqlite"
+
+
+@pytest.mark.git  # .env.example есть в checkout, в образе test его нет
+def test_env_example_has_no_db_path():
+    """FM_DB_PATH в .env.example увёл бы базу из FM_DATA_DIR (ревью 1.5, п. 6.1)."""
+    from factorminus.config import REPO_ROOT
+
+    example = (REPO_ROOT / ".env.example").read_text(encoding="utf-8")
+    assert not any(line.startswith("FM_DB_PATH=") for line in example.splitlines())
+    assert "# FM_DB_PATH=" in example
