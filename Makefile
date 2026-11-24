@@ -99,7 +99,7 @@ lock-check:
 	$(ML_INDEX) $(BUILD)/lock/ml.txt
 	$(BUILD_COMPILE) -o $(BUILD)/lock/build.txt
 	diff -u requirements $(BUILD)/lock && echo "lock-файлы соответствуют pyproject.toml"
-	$(PY) scripts/check_locks.py requirements/dev.txt requirements/ml.txt
+	$(PY) scripts/check_locks.py requirements/base.txt requirements/dev.txt requirements/ml.txt
 
 contract-check:
 	@rm -rf $(BUILD)/contract

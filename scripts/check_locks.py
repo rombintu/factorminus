@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Проверки lock-файлов.
 
-check_locks.py A.txt B.txt      — общие пакеты закреплены одинаково (образ test-ml ставит
-                                  dev.txt поверх ml.txt и не должен менять версии);
+check_locks.py A.txt B.txt ...  — в каждой паре файлов общие пакеты закреплены одинаково:
+                                  runtime собран из base.txt, а тесты идут на dev.txt; образ
+                                  test-ml ставит dev.txt поверх ml.txt и не должен менять версии;
 check_locks.py --build-requires — напечатать build-system.requires из pyproject.toml
                                   (вход для requirements/build.txt).
 """
@@ -12,6 +13,7 @@ from __future__ import annotations
 import re
 import sys
 import tomllib
+from itertools import combinations
 from pathlib import Path
 
 PIN_RE = re.compile(r"^([A-Za-z0-9_.-]+)==([^\s;\\]+)(?:\s*;\s*([^\\\n]+?))?\s*\\?$", re.M)
@@ -45,17 +47,21 @@ def main(argv: list[str]) -> int:
     if argv == ["--build-requires"]:
         print("\n".join(build_requires(ROOT / "pyproject.toml")))
         return 0
-    if len(argv) != 2:
+    if len(argv) < 2:
         print(__doc__, file=sys.stderr)
         return 2
-    a, b = (Path(x) for x in argv)
-    bad = mismatches(a.read_text(encoding="utf-8"), b.read_text(encoding="utf-8"))
-    for line in bad:
-        print(f"{a.name} / {b.name}: {line}")
-    if bad:
-        return 1
-    print(f"{a.name} и {b.name}: общие пакеты закреплены одинаково")
-    return 0
+    paths = [Path(x) for x in argv]
+    texts = {p: p.read_text(encoding="utf-8") for p in paths}
+    failed = False
+    for a, b in combinations(paths, 2):
+        bad = mismatches(texts[a], texts[b])
+        for line in bad:
+            print(f"{a.name} / {b.name}: {line}")
+        if bad:
+            failed = True
+        else:
+            print(f"{a.name} и {b.name}: общие пакеты закреплены одинаково")
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
