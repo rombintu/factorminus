@@ -16,6 +16,22 @@ FORBIDDEN_PATTERNS: dict[str, re.Pattern[str]] = {
     "советуем": re.compile(r"\bсовет(ую|уем|уете)\b", re.IGNORECASE),
     "лучше": re.compile(r"\bлучше\b", re.IGNORECASE),
     "стоит": re.compile(r"\bстоит\b", re.IGNORECASE),
+    # модальные слова совета; «необходимые данные» и «фонд повторяет индекс» — факты
+    "следует": re.compile(r"\bследует\b", re.IGNORECASE),
+    "нужно": re.compile(r"\bнужно\b", re.IGNORECASE),
+    "надо": re.compile(r"\bнадо\b", re.IGNORECASE),
+    "необходимо": re.compile(r"\bнеобходимо\b", re.IGNORECASE),
+    "стоило бы": re.compile(r"\bстоило\s+бы\b", re.IGNORECASE),
+    # повелительное наклонение: только формы на -те, без изъявительных («фиксирует», «увеличит»)
+    "избегайте": re.compile(r"\bизбегай(те)?\b", re.IGNORECASE),
+    "не берите": re.compile(r"\b(не\s+)?бери(те)?\b", re.IGNORECASE),
+    "сократите": re.compile(r"\bсократи(те)?\b", re.IGNORECASE),
+    "уменьшите": re.compile(r"\bуменьши(те)?\b", re.IGNORECASE),
+    "увеличьте": re.compile(r"\bувеличь(те)?\b", re.IGNORECASE),
+    "замените": re.compile(r"\bзамени(те)?\b", re.IGNORECASE),
+    "держите": re.compile(r"\bдержи(те)?\b", re.IGNORECASE),
+    "фиксируйте": re.compile(r"\bфиксируй(те)?\b", re.IGNORECASE),
+    "выгодно": re.compile(r"\bвыгодн(о|ее)\b", re.IGNORECASE),
 }
 FORBIDDEN_WORDS: tuple[str, ...] = tuple(FORBIDDEN_PATTERNS)
 
