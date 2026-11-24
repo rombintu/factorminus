@@ -184,7 +184,7 @@ ISS Мосбиржи ─┘ (сырые    (данные)   look-through (в Б�
 - `../AI/demo_plaque.py` — рабочий пример MCP-RPC, свечей и laya-дубля TMOS/SBMX (корреляция 0,918, score 0,98). **Плохие практики оттуда не переносить:** токен из конфига Zed, отключённый SSL.
 - `../analysis/lookthrough.py`, `../analysis/sample_portfolios.json` — расчёт сквозных долей по IMOEX и 4 портфеля по сегментам.
 - `../analysis/sber_vtb.py`, `../analysis/fetch_moex.py` — анализ шоков на ценах ISS.
-- `../idea_judge.py`, `../laya_triage_demo.py` — как вызывать laya: `Router(preload=True).predict(state, questions)`, типы вопросов `choice`, `score`, `noul`, результат `answers[...]["score"|"probabilities"]`, `routing.model`.
+- `../idea_judge.py`, `../laya_triage_demo.py` — как вызывать laya: `Router(preload=True).predict(state, questions)`, типы вопросов `choice`, `score`, `noul`, результат `answers[...]["score"|"probabilities"]`, `routing.model`. В проекте laya вызывается лениво, `Router()` без `preload`: на русском тексте грузится только multilingual (пик 2,2 ГБ), и это помещается в Docker Desktop с 4 ГБ, а `preload=True` (все три модели) на 4 ГБ падает по OOM.
 - `../SOLUTION.md`, `../LINKS_CONCEPT.md` — полная концепция графа связей из 9 слоёв. В MVP входят: слой 1 (один эмитент), слой 2 (фонды: индексные по весам IMOEX, остальные — дубль по описанию и корреляции), слой 3 (группы компаний, ручной справочник), упрощённый слой 8 (факторы по сектору бренда и разметке laya вместо МСФО), слой 9 (корреляции и совместное падение в шоки). Слои 4–7 — развитие после MVP.
 - `../T_INVEST_MCP_CONTEXT.md` — правила использования MCP.
 

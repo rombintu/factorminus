@@ -7,7 +7,7 @@
 | Workflow | Когда | Что делает |
 |---|---|---|
 | `ci.yml` | PR в `main`, push в `main`, вручную; вызывается из `release.yml` | проверки ниже + сводка прогона |
-| `ml.yml` | вручную, по понедельникам, PR с изменениями `analysis/labeler*`, `requirements/ml.txt`, `Dockerfile` | сборка `runtime-ml` и ML smoke без сети; merge не блокирует |
+| `ml.yml` | вручную, по понедельникам, PR с изменениями `analysis/labeler*`, `requirements/ml.txt`, `Dockerfile` | сборка `runtime-ml` и ML smoke без сети: ленивый `Router()` и `preload=True` (`--ml-heavy`), пиковая память в сводке; merge не блокирует |
 | `release.yml` | push в `main`, теги `v*` | CI → публикация образов в GHCR → GitHub Release (на тег) |
 | `_image.yml` | только из `release.yml` | сборка образа на нативных раннерах amd64/arm64, multi-arch манифест, SBOM, provenance |
 

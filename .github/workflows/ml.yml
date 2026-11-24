@@ -50,7 +50,8 @@ jobs:
           cache-to: type=gha,mode=max,scope=runtime-ml
       - name: stop build timer
         run: echo $(( $(date +%s) - $(cat build/ci/.t0) )) > build/ci/build-runtime-ml.txt && rm build/ci/.t0
-      - run: make docker-test-ml
+      # ленивый Router() и, раз памяти на раннере хватает, preload=True (ml_heavy)
+      - run: make docker-test-ml ML_PYTEST_ARGS=--ml-heavy 2>&1 | tee build/ci/ml.log
       - name: summary
         run: |
           {
@@ -58,4 +59,6 @@ jobs:
             echo
             echo "Размер runtime-ml: $(( $(docker image inspect -f '{{.Size}}' factorminus:ci-ml) / 1024 / 1024 )) МБ"
             echo "Сборка: $(cat build/ci/build-runtime-ml.txt) с"
+            grep -E 'passed|failed' build/ci/ml.log | tail -1
+            grep 'Пиковая память' build/ci/ml.log || true
           } >> "$GITHUB_STEP_SUMMARY"
