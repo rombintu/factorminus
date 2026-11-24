@@ -193,6 +193,26 @@
   kind: share
   role: share
   note: электроэнергетика
+- id: SGZH_TQBR
+  kind: share
+  role: share
+  note: 'для слоя 3: группа АФК Система (лесопром)'
+- id: ETLN_TQBR
+  kind: share
+  role: share
+  note: 'для слоя 3: группа АФК Система (девелопер)'
+- id: MSNG_TQBR
+  kind: share
+  role: share
+  note: 'для слоя 3: группа Газпром (Мосэнерго)'
+- id: OGKB_TQBR
+  kind: share
+  role: share
+  note: 'для слоя 3: группа Газпром (ОГК-2)'
+- id: TGKA_TQBR
+  kind: share
+  role: share
+  note: 'для слоя 3: группа Газпром (ТГК-1)'
 - id: SU26236RMFS8_TQOB
   kind: bond
   role: ofz
