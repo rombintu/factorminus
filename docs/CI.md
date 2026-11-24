@@ -48,16 +48,18 @@
 
 ## Как выпустить релиз
 
-Нумерация: `v0.1.0` — этап 1, `v0.1.5` — этап 1.5, `v0.2.0` — этап 2, `v0.3.0` — этап 3, `v1.0.0` — Demo Day. Тег вида `stage-1` не используется: он совпадает с именем ветки.
+Нумерация: `v0.1.5` — этапы 1 и 1.5 (сданы одним PR #1, поэтому релиз один), `v0.2.0` — этап 2, `v0.3.0` — этап 3, `v1.0.0` — Demo Day. Тег вида `stage-1` не используется: он совпадает с именем ветки. Отдельного `v0.1.0` нет: в последнем коммите этапа 1 ещё нет workflow релиза, а тег на merge-коммите дал бы два релиза одного кода.
 
-1. PR этапа влит в `main`, CI зелёный, строка этапа в `docs/STAGES.md` с тегом и ссылкой на отчёт есть.
+PR этапа вливается **merge-коммитом**, не squash: в `main` остаются отдельные коммиты этапа и правок по ревью, и отчёт ссылается на реальные коммиты. Прямой push в `main` закрыт, поэтому статус этапа «принят» и тег в `docs/STAGES.md` после merge обновляются в PR следующего этапа.
+
+1. PR этапа влит в `main` merge-коммитом, CI зелёный, строка этапа в `docs/STAGES.md` с тегом и ссылкой на отчёт есть (у этапов, вошедших в общий релиз, — «в составе `vX.Y.Z`»).
 2. Пользователь ставит тег на коммит в `main`:
    ```bash
    git switch main && git pull
    git tag -a v0.1.5 -m "Этап 1.5: CI/CD, Docker и контроль этапов"
    git push origin v0.1.5
    ```
-3. `release.yml` реагирует только на теги вида `vX.Y.Z`. Job `guard` (`make release-guard`) проверяет формат тега и то, что его коммит уже входит в `main`; иначе публикация не начинается. Затем `release.yml` прогоняет CI на этом коммите, публикует `ghcr.io/rombintu/factorminus:0.1.5`, `:0.1`, `:latest`, `:v0.1.5` (runtime) и `:0.1.5-ml`, `:v0.1.5-ml` (runtime-ml), затем создаёт GitHub Release. Текст: раздел «Что сделано» из отчёта этапа (`scripts/release_notes.py`), ссылки на образы и на прогон CI. Проверить текст заранее: `RELEASE_TAG=v0.1.5 make release-notes && cat build/release.md`.
+3. `release.yml` реагирует только на теги вида `vX.Y.Z`. Job `guard` (`make release-guard`) проверяет формат тега и то, что его коммит уже входит в `main`; иначе публикация не начинается. Затем `release.yml` прогоняет CI на этом коммите, публикует `ghcr.io/rombintu/factorminus:0.1.5`, `:0.1`, `:latest`, `:v0.1.5` (runtime) и `:0.1.5-ml`, `:v0.1.5-ml` (runtime-ml), затем создаёт GitHub Release. Текст: разделы «Что сделано» из отчётов всех этапов с этим тегом, по порядку (`scripts/release_notes.py`), ссылки на образы и на прогон CI. Проверить текст заранее: `RELEASE_TAG=v0.1.5 make release-notes && cat build/release.md`.
 
 Push в `main` публикует `:main` и `:sha-<коротк>` (только runtime).
 
@@ -73,11 +75,11 @@ GitHub → профиль `rombintu` → Packages → `factorminus` → Package 
 ## Защита `main`
 
 Настраивает пользователь (это настройка репозитория). Нужно:
-- merge только через PR;
+- merge только через PR и только merge-коммитом (без squash и rebase);
 - обязательные проверки `lint`, `test`, `hygiene`, `lockfiles`, `contract`, `docker`;
 - без force push и удаления ветки.
 
-**Через веб-интерфейс:** Settings → Rules → Rulesets → New branch ruleset → имя `main`, Enforcement: Active, Target: Default branch → включить Restrict deletions, Block force pushes, Require a pull request before merging (Required approvals: 0, если в команде один разработчик), Require status checks to pass (Require branches to be up to date; добавить `lint`, `test`, `hygiene`, `lockfiles`, `contract`, `docker` — они появятся в списке после первого прогона CI) → Create.
+**Через веб-интерфейс:** Settings → Rules → Rulesets → New branch ruleset → имя `main`, Enforcement: Active, Target: Default branch → включить Restrict deletions, Block force pushes, Require a pull request before merging (Required approvals: 0, если в команде один разработчик; Allowed merge methods: только Merge), Require status checks to pass (Require branches to be up to date; добавить `lint`, `test`, `hygiene`, `lockfiles`, `contract`, `docker` — они появятся в списке после первого прогона CI) → Create.
 
 **Одной командой** (применяется только по явной просьбе пользователя):
 
@@ -96,7 +98,8 @@ gh api -X POST repos/rombintu/factorminus/rulesets --input - <<'EOF'
       "dismiss_stale_reviews_on_push": false,
       "require_code_owner_review": false,
       "require_last_push_approval": false,
-      "required_review_thread_resolution": false
+      "required_review_thread_resolution": false,
+      "allowed_merge_methods": ["merge"]
     }},
     {"type": "required_status_checks", "parameters": {
       "strict_required_status_checks_policy": true,

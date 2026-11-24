@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Текст GitHub Release для тега vX.Y.Z.
 
-Этап и отчёт берутся из строки `docs/STAGES.md` с этим тегом; из отчёта — раздел
-«## Что сделано» целиком (с подразделами). Плюс ссылки на образы GHCR и на прогон CI.
+Этапы и отчёты берутся из строк `docs/STAGES.md` с этим тегом в колонке «Тег» (в том числе
+«в составе `vX.Y.Z`», когда несколько этапов сдаются одним PR и одним релизом). Из каждого
+отчёта — раздел «## Что сделано» целиком (с подразделами), по порядку этапов в журнале.
+Плюс ссылки на образы GHCR и на прогон CI.
 
     python scripts/release_notes.py --tag v0.1.5 [--docs docs] > build/release.md
 """
@@ -17,6 +19,7 @@ from pathlib import Path
 
 IMAGE = "ghcr.io/rombintu/factorminus"
 TAG_RE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
+CELL_TAG_RE = re.compile(r"v\d+\.\d+\.\d+")
 LINK_RE = re.compile(r"\]\(([^)]+)\)")
 
 
@@ -28,21 +31,28 @@ def _cells(line: str) -> list[str]:
     return [c.strip() for c in line.strip().strip("|").split("|")]
 
 
-def stage_for_tag(stages_md: Path, tag: str) -> dict[str, str]:
-    """Строка журнала этапов с этим тегом: этап и путь к отчёту (относительно docs/)."""
+def stages_for_tag(stages_md: Path, tag: str) -> list[dict[str, str]]:
+    """Строки журнала этапов с этим тегом: этап и путь к отчёту (относительно docs/).
+
+    Порядок — как в журнале. Тег в ячейке может стоять с пометкой («в составе `v0.1.5`»).
+    """
     lines = [ln for ln in stages_md.read_text(encoding="utf-8").splitlines() if ln.startswith("|")]
     if len(lines) < 3:
         raise ReleaseError(f"{stages_md}: нет таблицы этапов")
     header = [h.lower() for h in _cells(lines[0])]
     col = {name: header.index(name) for name in ("этап", "тег", "отчёт")}
+    rows = []
     for line in lines[2:]:
         cells = _cells(line)
-        if cells[col["тег"]].strip("`") == tag:
-            link = LINK_RE.search(cells[col["отчёт"]])
-            if not link:
-                raise ReleaseError(f"{stages_md}: у тега {tag} нет ссылки на отчёт")
-            return {"stage": cells[col["этап"]], "report": link.group(1)}
-    raise ReleaseError(f"{stages_md}: тег {tag} не найден в журнале этапов")
+        if tag not in CELL_TAG_RE.findall(cells[col["тег"]]):
+            continue
+        link = LINK_RE.search(cells[col["отчёт"]])
+        if not link:
+            raise ReleaseError(f"{stages_md}: у этапа {cells[col['этап']]} нет ссылки на отчёт")
+        rows.append({"stage": cells[col["этап"]], "report": link.group(1)})
+    if not rows:
+        raise ReleaseError(f"{stages_md}: тег {tag} не найден в журнале этапов")
+    return rows
 
 
 def done_section(report: Path) -> str:
@@ -71,14 +81,11 @@ def render(docs: Path, tag: str, *, repo: str, run_url: str) -> str:
     if not m:
         raise ReleaseError(f"тег {tag!r}: ожидается vX.Y.Z (тег stage-N не используется)")
     version = tag[1:]
-    row = stage_for_tag(docs / "STAGES.md", tag)
-    report_rel = row["report"]
-    done = done_section(docs / report_rel)
-    lines = [
-        f"## Этап {row['stage']}",
-        "",
-        done,
-        "",
+    rows = stages_for_tag(docs / "STAGES.md", tag)
+    lines: list[str] = []
+    for row in rows:
+        lines += [f"## Этап {row['stage']}", "", done_section(docs / row["report"]), ""]
+    lines += [
         "## Образы",
         "",
         f"- `{IMAGE}:{version}` (также `:{m.group(1)}.{m.group(2)}` и `:latest`) — runtime",
@@ -86,8 +93,10 @@ def render(docs: Path, tag: str, *, repo: str, run_url: str) -> str:
         "",
         "Платформы: linux/amd64, linux/arm64. Запуск: `docs/DEPLOY.md`.",
         "",
-        f"Отчёт этапа: https://github.com/{repo}/blob/{tag}/docs/{report_rel}",
     ]
+    for row in rows:
+        url = f"https://github.com/{repo}/blob/{tag}/docs/{row['report']}"
+        lines.append(f"Отчёт этапа {row['stage']}: {url}")
     if run_url:
         lines.append(f"Сводка CI: {run_url}")
     return "\n".join(lines) + "\n"
