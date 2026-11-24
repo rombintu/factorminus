@@ -19,3 +19,6 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
+
+# Synthetic cassettes are generated on the fly from the seed
+tests/fixtures/synthetic/cassettes/

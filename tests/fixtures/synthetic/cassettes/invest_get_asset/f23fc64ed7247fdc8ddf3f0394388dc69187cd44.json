@@ -1,1 +1,0 @@
-{"arguments":{"id":"syn-asset-syn-bank1p"},"result":{"asset":{"brand":{"uid":"syn-brand-bank1"},"instruments":[{"classCode":"SYN","ticker":"SYN_BANK1P"}],"name":"ПАО «Синтбанк»: Синтбанк ап","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-bank1p"}},"tool":"invest_get_asset"}

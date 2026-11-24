@@ -116,7 +116,7 @@
  {
   "apiTradeAvailableFlag": true,
   "assetUid": "syn-asset-syn-bank1p",
-  "brandUid": "syn-brand-bank1",
+  "brandUid": "syn-brand-bank1p",
   "classCode": "SYN",
   "currency": "rub",
   "dlongClient": {
@@ -325,7 +325,7 @@
  {
   "apiTradeAvailableFlag": false,
   "assetUid": "syn-asset-syn-grptel-b",
-  "brandUid": "syn-brand-grptel",
+  "brandUid": "syn-brand-grptel-b",
   "classCode": "SYN",
   "currency": "rub",
   "dlongClient": {
@@ -365,7 +365,7 @@
  {
   "apiTradeAvailableFlag": false,
   "assetUid": "syn-asset-syn-grpdev-b",
-  "brandUid": "syn-brand-grpdev",
+  "brandUid": "syn-brand-grpdevfin",
   "classCode": "SYN",
   "currency": "rub",
   "dlongClient": {
@@ -377,7 +377,7 @@
   "isin": "SYGRPDEV_B00",
   "lot": 1,
   "maturityDate": "2028-02-03",
-  "name": "СинтСтрой 002P-01",
+  "name": "СинтСтрой-Финанс 002P-01",
   "positionUid": "syn-pos-syn-grpdev-b",
   "role": "corp_bond",
   "ticker": "SYN_GRPDEV_B"
@@ -449,7 +449,7 @@
    "value": "0.2"
   },
   "exchange": "SYN",
-  "first1dayCandleDate": "2020-01-02T07:00:00Z",
+  "first1dayCandleDate": "2020-10-08T07:00:00Z",
   "index": "SYNIDX",
   "isin": "SYIDXB000000",
   "lot": 1,
@@ -457,6 +457,25 @@
   "positionUid": "syn-pos-syn-idxb",
   "role": "index_fund",
   "ticker": "SYN_IDXB"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-idxc",
+  "brandUid": null,
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-12-26T07:00:00Z",
+  "index": "SYNIDX",
+  "isin": "SYIDXC000000",
+  "lot": 1,
+  "name": "Синт-Атон Индекс SYNIDX",
+  "positionUid": "syn-pos-syn-idxc",
+  "role": "index_fund",
+  "ticker": "SYN_IDXC"
  },
  {
   "apiTradeAvailableFlag": false,
@@ -533,6 +552,25 @@
   "positionUid": "syn-pos-syn-money",
   "role": "money_fund",
   "ticker": "SYN_MONEY"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-bondf",
+  "brandUid": "syn-brand-bondf",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2020-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYBONDF00000",
+  "lot": 1,
+  "name": "Синт Облигации",
+  "positionUid": "syn-pos-syn-bondf",
+  "role": "bond_fund",
+  "ticker": "SYN_BONDF"
  },
  {
   "apiTradeAvailableFlag": false,

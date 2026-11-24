@@ -1,1 +1,0 @@
-{"arguments":{"id":"syn-asset-syn-grpdev-b"},"result":{"asset":{"brand":{"uid":"syn-brand-grpdev"},"instruments":[{"classCode":"SYN","ticker":"SYN_GRPDEV_B"}],"name":"ПАО «СинтСтрой»: СинтСтрой 002P-01","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-grpdev-b"}},"tool":"invest_get_asset"}

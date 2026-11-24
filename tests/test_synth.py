@@ -102,8 +102,47 @@ def resid_corr(closes, a, b, market, regime, regimes):
     return float(np.corrcoef(resid(r[a]), resid(r[b]))[0, 1])
 
 
+def _fixture_json(name):
+    return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
+
+
+def _csv_rows():
+    with open(FIXTURES / "candles.csv", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
 def check(p, closes, manifest, regimes, universe_ids) -> tuple[bool, float | None]:
     t, a, reg = p["type"], p["a"], p.get("regime")
+    instruments = {i["ticker"]: i for i in _fixture_json("instruments.json")}
+    brands = {b["uid"]: b for b in _fixture_json("brands.json").values()}
+    if t == "same_issuer_different_brand":
+        ba, bb = instruments[a]["brandUid"], instruments[p["b"]]["brandUid"]
+        return ba != bb and brands[ba]["company"] == brands[bb]["company"], None
+    if t == "issuer_override":
+        text = (FIXTURES / "universe.yaml").read_text(encoding="utf-8")
+        company = brands[instruments[a]["brandUid"]]["company"]
+        return f"issuer: {p['value']}" in text and company != p["value"], None
+    if t == "weekend_candles":
+        from datetime import date as _d
+
+        rows = _csv_rows()
+        wk = [r for r in rows if _d.fromisoformat(r["date"]).weekday() >= 5]
+        ids = {r["instrument_id"] for r in wk}
+        ok = ids == set(a) and all(r["date"] >= p["from"] for r in wk)
+        ok = ok and all(int(r["volume"]) <= p["max_volume"] for r in wk)
+        return ok, len(wk)
+    if t == "incomplete_last_candle":
+        # корректный загрузчик не сохраняет незакрытую свечу: в CSV последней даты нет
+        return max(closes[a]) < manifest["params"]["end"], None
+    if t == "no_brand":
+        return instruments[a]["brandUid"] is None, None
+    if t == "empty_sector":
+        return all(brands[instruments[x]["brandUid"]]["sector"] == "" for x in a), None
+    if t == "starts_after_episode":
+        ep = next(e for e in manifest["params"]["shocks"] if e["id"] == p["episode"])
+        return min(closes[a]) > ep["end"], None
+    if t == "index_candles":
+        return len(closes[a]) == p["value"], len(closes[a])
     if t == "corr_gte":
         v = corr(closes, a, p["b"], reg, regimes)
         return v >= p["value"], v
@@ -152,7 +191,7 @@ def test_manifest_expected_properties(closes, manifest):
         if not ok:
             failures.append((p, value))
     assert not failures, failures
-    assert len(manifest["expected"]) >= 25
+    assert len(manifest["expected"]) >= 35
 
 
 def test_manifest_describes_shocks_and_groups(manifest):
@@ -179,5 +218,5 @@ def test_index_weights_sum_100():
 def test_no_real_tickers(closes):
     manifest = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
     assert all(i["id"].startswith("SYN_") for i in manifest["instruments"])
-    assert all(i.startswith("SYN_") for i in closes)
+    assert all(i.startswith("SYN_") or i == "SYNIDX_INDEX" for i in closes)
     assert len(closes["SYN_IDXA"]) == N_DAYS

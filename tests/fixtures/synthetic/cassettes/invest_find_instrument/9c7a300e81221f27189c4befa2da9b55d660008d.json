@@ -1,1 +1,0 @@
-{"arguments":{"query":"SYN_ABSENT","responseView":["IDENTIFIERS","STATIC_DATA"]},"result":{"instruments":[{"classCode":"SYN","isin":"SYABSENT0000","name":"Синт-Отсутствующая","ticker":"SYN_ABSENT"}]},"tool":"invest_find_instrument"}

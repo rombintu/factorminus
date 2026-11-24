@@ -1,1 +1,0 @@
-{"arguments":{"id":"syn-asset-syn-oil3"},"result":{"asset":{"brand":{"uid":"syn-brand-oil3"},"instruments":[{"classCode":"SYN","ticker":"SYN_OIL3"}],"name":"ПАО «Синтгаз»: Синтгаз","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-oil3"}},"tool":"invest_get_asset"}

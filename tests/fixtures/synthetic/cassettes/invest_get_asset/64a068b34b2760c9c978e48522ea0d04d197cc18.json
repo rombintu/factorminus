@@ -1,1 +1,0 @@
-{"arguments":{"id":"syn-asset-syn-oil4"},"result":{"asset":{"brand":{"uid":"syn-brand-oil4"},"instruments":[{"classCode":"SYN","ticker":"SYN_OIL4"}],"name":"ПАО «Северная нефть»: Северная нефть","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-oil4"}},"tool":"invest_get_asset"}

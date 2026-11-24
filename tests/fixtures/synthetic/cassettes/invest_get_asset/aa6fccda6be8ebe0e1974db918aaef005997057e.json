@@ -1,1 +1,0 @@
-{"arguments":{"id":"syn-asset-syn-telecom1"},"result":{"asset":{"brand":{"uid":"syn-brand-tel1"},"instruments":[{"classCode":"SYN","ticker":"SYN_TELECOM1"}],"name":"ПАО «СинтТелеком»: СинтТелеком","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-telecom1"}},"tool":"invest_get_asset"}

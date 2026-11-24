@@ -370,6 +370,9 @@ SYNTH_DIR = REPO_ROOT / "tests" / "fixtures" / "synthetic"
 def synth_generate(
     seed: Annotated[int, typer.Option()] = 42,
     out: Annotated[Path, typer.Option()] = SYNTH_DIR,
+    cassettes: Annotated[
+        bool, typer.Option("--cassettes/--no-cassettes", help="Записать и кассеты (не для git)")
+    ] = False,
 ) -> None:
     """Сгенерировать синтетический набор (детерминированно по seed)."""
     from factorminus.synth.generator import generate, write_dataset
@@ -377,7 +380,7 @@ def synth_generate(
     if out.exists() and any(out.iterdir()) and not (out / "manifest.json").exists():
         raise ValueError(f"{out} не пуст и не похож на синтетический набор: не перезаписываю")
     ds = generate(seed)
-    write_dataset(ds, out)
+    write_dataset(ds, out, cassettes=cassettes)
     typer.echo(
         f"seed={seed}: {len(ds.specs)} бумаг, {ds.dates[0]} … {ds.last_date}, "
         f"{len(ds.manifest['expected'])} ожидаемых свойств → {out}"
@@ -391,12 +394,23 @@ def synth_load(
     fixtures: Annotated[Path, typer.Option()] = SYNTH_DIR,
 ) -> None:
     """Загрузить синтетику в SQLite через конвейер в режиме replay (без сети)."""
-    from factorminus.synth.load import load_synth
+    from factorminus.db import connect
+    from factorminus.synth.load import expected_errors, load_synth
 
     summary = load_synth(db, fixtures)
     typer.echo(f"{db}: {summary.text()}")
-    if summary.errors:
+    got = {
+        (r[0], r[1])
+        for r in connect(db).execute(
+            "SELECT instrument_id, step FROM ingest_errors WHERE run_id=?", (summary.run_id,)
+        )
+    }
+    want = expected_errors(fixtures)
+    if got - want:
+        typer.echo(f"Неожиданные ошибки загрузки: {sorted(got - want)}", err=True)
         raise typer.Exit(1)
+    if got:
+        typer.echo(f"Ожидаемые ошибки (особенности данных): {sorted(got)}")
 
 
 # --- contract ---

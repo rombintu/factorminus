@@ -56,6 +56,12 @@ N_DROP_DAYS = 12
 DROP_MEAN, DROP_VOL, DROP_STRESS = -0.045, 0.01, 0.025
 TRACKING_NOISE = 0.0015
 FIND_ARGS_VIEW = ["IDENTIFIERS", "STATIC_DATA"]
+INDEX_MCP_ID = "SYNIDX_SYN"  # «MCP-идентификатор» синтетического индекса (как IMOEX_TQBR)
+INDEX_LEVEL0 = 1000.0
+# Особенности реальных данных, которые синтетика воспроизводит (ТЗ правок этапа 1, п. 2)
+WEEKEND_IDS = ("SYN_BANK1", "SYN_OIL1", "SYN_TECH2")  # торги выходного дня
+WEEKEND_FROM_DAY = 1200  # с какого рабочего дня ряда появляются свечи выходных
+INCOMPLETE_LAST_ID = "SYN_TECH2"  # последняя свеча в кассете с isComplete=false
 
 
 @dataclass
@@ -66,7 +72,7 @@ class Spec:
     kind: str  # share | etf | bond
     role: str
     name: str
-    brand: str  # ключ в BRANDS
+    brand: str | None  # ключ в BRANDS; None — у актива нет бренда
     loads: dict[str, float] = field(default_factory=dict)  # β и γ по факторам
     idio: float = 0.0
     p0: float = 100.0
@@ -78,9 +84,12 @@ class Spec:
     basket: dict[str, float] | None = None  # корзина из других бумаг (доли, сумма 1)
     noise: float = TRACKING_NOISE  # шум поверх корзины
     in_universe: bool = True
+    issuer: str | None = None  # ручной эмитент в universe.yaml (облигации через «дочку»)
 
 
-# ключ -> (название, компания, сектор, описание)
+# ключ -> (название бренда, company, сектор, описание). Как в реальном MCP: у бумаг одного
+# эмитента бренды разные (ао/ап, акция/облигация), общая у них company; у фондов company —
+# управляющая компания; у части фондов сектор пустой.
 BRANDS: dict[str, tuple[str, str, str, str]] = {
     "oil1": ("Синтнефть", "ПАО «Синтнефть»", "energy",
              "Вертикально интегрированная нефтяная компания: добыча и переработка нефти."),
@@ -92,19 +101,24 @@ BRANDS: dict[str, tuple[str, str, str, str]] = {
              "Нефтедобывающая компания Западной Сибири."),
     "oil5": ("Синт-Переработка", "ПАО «Синт-Переработка»", "energy",
              "Нефтепереработка и сеть АЗС, нефтехимия."),
-    "bank1": ("Синтбанк", "ПАО «Синтбанк»", "financial",
-              "Крупнейший универсальный банк: кредиты, вклады, платежи. "
-              "Обыкновенные и привилегированные акции."),
+    "bank1": ("Синтбанк ао", "ПАО «Синтбанк»", "financial",
+              "Крупнейший универсальный банк: кредиты, вклады, платежи."),
+    "bank1p": ("Синтбанк ап", "ПАО «Синтбанк»", "financial",
+               "Привилегированные акции крупнейшего универсального банка."),
     "bank2": ("Банк Синт-Капитал", "ПАО «Банк Синт-Капитал»", "financial",
               "Второй по величине государственный банк: розничный и корпоративный бизнес."),
     "grp": ("Синт-Система", "ПАО АФК «Синт-Система»", "financial",
             "Инвестиционный холдинг: телеком, лесопереработка, девелопмент."),
-    "grptel": ("СинтМобайл", "ПАО «СинтМобайл»", "telecom",
+    "grptel": ("СинтМобайл ао", "ПАО «СинтМобайл»", "telecom",
                "Мобильная связь и цифровые сервисы."),
+    "grptel_b": ("СинтМобайл", "ПАО «СинтМобайл»", "telecom",
+                 "Облигации оператора мобильной связи."),
     "grpfor": ("СинтЛес", "ПАО «СинтЛес»", "materials",
                "Лесопромышленная компания: пиломатериалы, бумага, фанера."),
     "grpdev": ("СинтСтрой", "ПАО «СинтСтрой»", "real_estate",
                "Девелопер жилой недвижимости."),
+    "grpdevfin": ("СинтСтрой-Финанс", "ООО «СинтСтрой-Финанс»", "real_estate",
+                  "Финансовая компания группы СинтСтрой: выпуск облигаций."),
     "met1": ("Синтметалл", "ПАО «Синтметалл»", "materials",
              "Производство стали и металлопроката."),
     "met2": ("Синтникель", "ПАО «Синтникель»", "materials",
@@ -125,9 +139,11 @@ BRANDS: dict[str, tuple[str, str, str, str]] = {
               "Фонд инвестирует в акции крупнейших и наиболее ликвидных компаний рынка."),
     "divact": ("Синт Дивидендный", "УК «Синт-Актив»", "other",
                "Активно управляемый фонд дивидендных акций."),
-    "gold": ("Синт Золото", "УК «Синт-Капитал»", "other", "Фонд физического золота."),
-    "money": ("Синт Ликвидность", "УК «Синт-Капитал»", "other",
+    "gold": ("Синт Золото", "УК «Синт-Капитал»", "", "Фонд физического золота."),
+    "money": ("Синт Ликвидность", "УК «Синт-Капитал»", "",
               "Фонд денежного рынка: сделки обратного РЕПО с ЦК."),
+    "bondf": ("Синт Облигации", "УК «Синт-Капитал»", "",
+              "Фонд государственных и корпоративных облигаций."),
     "minfin": ("Минфин Синт", "Министерство финансов Синтландии", "government",
                "Государственные облигации федерального займа."),
     "absent": ("Синт-Отсутствующая", "ПАО «Синт-Отсутствующая»", "industrials",
@@ -140,7 +156,13 @@ GROUPS: tuple[dict, ...] = (
         "name": "Синт-Система",
         "type": "ownership",
         "parent_brand": "Синт-Система",
-        "member_brands": ["СинтМобайл", "СинтЛес", "СинтСтрой"],
+        "member_brands": [
+            "СинтМобайл ао",
+            "СинтМобайл",
+            "СинтЛес",
+            "СинтСтрой",
+            "СинтСтрой-Финанс",
+        ],
         "instruments": ["SYN_GRP", "SYN_GRPTEL", "SYN_GRPTEL_B", "SYN_GRPFOR_B", "SYN_GRPDEV_B"],
     },
 )
@@ -178,7 +200,7 @@ def _specs() -> list[Spec]:
         Spec("SYN_BANK1", "share", "share", "Синтбанк ао", "bank1",
              {"market": 1.1, "banks": 1.0, "rate": -0.5}, 0.008, 250, calm_drift=0.0006),
         # префы того же эмитента: цена следует за обыкновенной акцией
-        Spec("SYN_BANK1P", "share", "share", "Синтбанк ап", "bank1",
+        Spec("SYN_BANK1P", "share", "share", "Синтбанк ап", "bank1p",
              p0=240, basket={"SYN_BANK1": 1.0}, noise=0.003),
         # «синтетический ВТБ»: в спокойные годы падает
         Spec("SYN_BANK2", "share", "share", BRANDS["bank2"][0], "bank2",
@@ -202,12 +224,14 @@ def _specs() -> list[Spec]:
              {"market": 1.0, "group": 1.0}, 0.012, 15.0),
         Spec("SYN_GRPTEL", "share", "share", "СинтМобайл ао", "grptel",
              {"market": 0.6, "group": 0.6, "rate": -0.3}, 0.008, 230.0),
-        Spec("SYN_GRPTEL_B", "bond", "corp_bond", "СинтМобайл 001P-02", "grptel",
+        Spec("SYN_GRPTEL_B", "bond", "corp_bond", "СинтМобайл 001P-02", "grptel_b",
              {"rate": -0.6, "group": 0.15}, 0.001, 98.0, drift=0.0003, maturity="2028-11-15"),
         Spec("SYN_GRPFOR_B", "bond", "corp_bond", "СинтЛес 002P-01", "grpfor",
              {"rate": -0.6, "group": 0.3}, 0.002, 90.0, drift=0.0004, maturity="2029-03-10"),
-        Spec("SYN_GRPDEV_B", "bond", "corp_bond", "СинтСтрой 002P-01", "grpdev",
-             {"rate": -0.6, "group": 0.25}, 0.0015, 95.0, drift=0.0004, maturity="2028-02-03"),
+        # выпуск через финансовую «дочку»: company «СинтСтрой-Финанс», эмитент риска — СинтСтрой
+        Spec("SYN_GRPDEV_B", "bond", "corp_bond", "СинтСтрой-Финанс 002P-01", "grpdevfin",
+             {"rate": -0.6, "group": 0.25}, 0.0015, 95.0, drift=0.0004, maturity="2028-02-03",
+             issuer="ПАО «СинтСтрой»"),
         Spec("SYN_NEWCO", "share", "share", BRANDS["newco"][0], "newco",
              {"market": 1.3, "tech": 1.2}, 0.02, 50, history_days=40),
         Spec("SYN_ABSENT", "share", "share", BRANDS["absent"][0], "absent",
@@ -215,8 +239,12 @@ def _specs() -> list[Spec]:
         # фонды
         Spec("SYN_IDXA", "etf", "index_fund", "Синт-Капитал Индекс SYNIDX", "idxa",
              p0=7.0, index=INDEX_ID, basket=_norm(INDEX_WEIGHTS)),
+        # моложе SHOCK_A: история с 200-го рабочего дня (правило «до запуска — по индексу»)
         Spec("SYN_IDXB", "etf", "index_fund", "Первая Синт — Фонд индекса SYNIDX", "idxb",
-             p0=20.0, index=INDEX_ID, basket=_norm(INDEX_WEIGHTS)),
+             p0=20.0, index=INDEX_ID, basket=_norm(INDEX_WEIGHTS), history_days=N_DAYS - 200),
+        # фонд без бренда (как AMIX): у актива нет brand.uid
+        Spec("SYN_IDXC", "etf", "index_fund", "Синт-Атон Индекс SYNIDX", None,
+             p0=1.0, index=INDEX_ID, basket=_norm(INDEX_WEIGHTS), history_days=200),
         # скрытый дубль: почти тот же индекс, в названии и описании нет слова «индекс»
         Spec("SYN_TOPCO", "etf", "active_fund", "Синт — Топ российских компаний", "topco",
              p0=150.0, basket=_norm({k: v for k, v in INDEX_WEIGHTS.items() if v >= 5})),
@@ -229,6 +257,9 @@ def _specs() -> list[Spec]:
              {"market": -0.05, "gold": 1.0}, 0.003, 11.0),
         Spec("SYN_MONEY", "etf", "money_fund", "Синт Ликвидность", "money",
              {}, 0.00005, 1.5, drift=0.0004),
+        Spec("SYN_BONDF", "etf", "bond_fund", "Синт Облигации", "bondf",
+             p0=10.0, basket={"SYN_OFZS": 0.5, "SYN_OFZL": 0.3, "SYN_GRPTEL_B": 0.2},
+             noise=0.0005),
         Spec("SYN_OFZS", "bond", "ofz", "ОФЗ Синт 2027", "minfin",
              {"rate": -0.3}, 0.0005, 98.0, drift=0.0003, maturity="2027-06-16"),
         Spec("SYN_OFZL", "bond", "ofz", "ОФЗ Синт 2041", "minfin",
@@ -253,6 +284,12 @@ class SynthDataset:
     specs: list[Spec]
     candles: dict[str, list[dict]]  # id -> [{date, open, high, low, close, volume}]
     manifest: dict
+    index_candles: list[dict] = field(default_factory=list)  # SYNIDX: дневные закрытия
+
+    def stored_candles(self, iid: str) -> list[dict]:
+        """Свечи, которые корректный загрузчик сохранит: без незакрытой последней."""
+        rows = self.candles[iid]
+        return rows[:-1] if iid == INCOMPLETE_LAST_ID else rows
 
     @property
     def last_date(self) -> date:
@@ -305,8 +342,38 @@ def generate(seed: int = 42) -> SynthDataset:
             r = sum(w * ret[i] for i, w in sp.basket.items())
             ret[sp.id] = r + rng.normal(0.0, sp.noise, n)
     candles = {sp.id: _ohlc(sp, dates, ret[sp.id], rng) for sp in specs}
+    weekend_from = dates[WEEKEND_FROM_DAY]
+    for iid in WEEKEND_IDS:
+        candles[iid] = _add_weekends(candles[iid], weekend_from, rng)
+    idx_r = sum(w * ret[i] for i, w in _norm(INDEX_WEIGHTS).items())
+    levels = INDEX_LEVEL0 * np.exp(np.concatenate([[0.0], np.cumsum(idx_r)]))
+    index_candles = [
+        {"date": d.isoformat(), "open": None, "high": None, "low": None,
+         "close": round(float(v), 2), "volume": 0}
+        for d, v in zip(dates, levels, strict=True)
+    ]  # fmt: skip
     manifest = _manifest(seed, dates, specs, regime)
-    return SynthDataset(seed, dates, specs, candles, manifest)
+    return SynthDataset(seed, dates, specs, candles, manifest, index_candles)
+
+
+def _add_weekends(rows: list[dict], start: date, rng: np.random.Generator) -> list[dict]:
+    """Свечи субботы и воскресенья: малый объём, небольшой шум от закрытия пятницы."""
+    out: list[dict] = []
+    for i, row in enumerate(rows):
+        out.append(row)
+        d = date.fromisoformat(row["date"])
+        nxt = date.fromisoformat(rows[i + 1]["date"]) if i + 1 < len(rows) else None
+        if d < start or d.weekday() != 4 or nxt is None:
+            continue
+        close = row["close"]
+        for k in (1, 2):
+            c = round(close * (1 + float(rng.normal(0.0, 0.002))), 4)
+            out.append({"date": (d + timedelta(days=k)).isoformat(), "open": close,
+                        "high": round(max(close, c) * 1.001, 4),
+                        "low": round(min(close, c) * 0.999, 4), "close": c,
+                        "volume": int(rng.integers(10, 500))})  # fmt: skip
+            close = c
+    return out
 
 
 def _ohlc(sp: Spec, dates: list[date], r: np.ndarray, rng: np.random.Generator) -> list[dict]:
@@ -371,6 +438,25 @@ def _manifest(seed: int, dates: list[date], specs: list[Spec], regime: list[str]
          "why": "активный фонд на 70% из нефти и банков"},
         {"type": "history_days_eq", "a": "SYN_NEWCO", "value": 40,
          "why": "короткая история: флаг description_based"},
+        {"type": "same_issuer_different_brand", "a": "SYN_BANK1", "b": "SYN_BANK1P",
+         "why": "ао и ап: бренды разные, company общая (как SBER/SBERP)"},
+        {"type": "same_issuer_different_brand", "a": "SYN_GRPTEL", "b": "SYN_GRPTEL_B",
+         "why": "акция и облигация одной компании: бренды разные, company общая"},
+        {"type": "issuer_override", "a": "SYN_GRPDEV_B", "value": "ПАО «СинтСтрой»",
+         "why": "облигация через финансовую «дочку»: эмитент задан в universe.yaml"},
+        {"type": "weekend_candles", "a": list(WEEKEND_IDS),
+         "from": dates[WEEKEND_FROM_DAY].isoformat(), "max_volume": 500,
+         "why": "торги выходного дня: этап 2 их отфильтровывает"},
+        {"type": "incomplete_last_candle", "a": INCOMPLETE_LAST_ID,
+         "why": "последняя свеча в кассете isComplete=false: разбор её пропускает"},
+        {"type": "no_brand", "a": "SYN_IDXC",
+         "why": "фонд без бренда (как AMIX): ошибка шага brand, флаг на этапе 2"},
+        {"type": "empty_sector", "a": ["SYN_GOLD", "SYN_MONEY", "SYN_BONDF"],
+         "why": "пустой сектор бренда (как TGLD, LQDT, TBRU): профиль из role"},
+        {"type": "starts_after_episode", "a": "SYN_IDXB", "episode": "SHOCK_A",
+         "why": "фонд моложе шока: до запуска считаем по индексу"},
+        {"type": "index_candles", "a": "SYNIDX_INDEX", "value": len(dates),
+         "why": "дневная история синтетического индекса (как IMOEX_INDEX)"},
         {"type": "not_in_universe", "a": "SYN_ABSENT",
          "why": "есть только в каталоге MCP: флаг preliminary"},
     ]  # fmt: skip
@@ -405,14 +491,17 @@ def _manifest(seed: int, dates: list[date], specs: list[Spec], regime: list[str]
             "regime_note": "режим относится к доходности дня date (от закрытия предыдущего дня)",
         },
         "groups": list(GROUPS),
+        "expected_ingest_errors": [{"instrument_id": "SYN_IDXC", "step": "brand"}],
         "instruments": [
             {
                 "id": sp.id,
                 "kind": sp.kind,
                 "role": sp.role,
                 "index": sp.index,
-                "brand": BRANDS[sp.brand][0],
-                "sector": BRANDS[sp.brand][2],
+                "brand": BRANDS[sp.brand][0] if sp.brand else None,
+                "company": BRANDS[sp.brand][1] if sp.brand else None,
+                "sector": (BRANDS[sp.brand][2] or None) if sp.brand else None,
+                "issuer": sp.issuer,
                 "loads": sp.loads,
                 "basket": {k: round(v, 6) for k, v in sp.basket.items()} if sp.basket else None,
                 "history_days": sp.history_days,
@@ -460,7 +549,9 @@ def _card(sp: Spec) -> dict:
 
 def _entries(specs: list[Spec]) -> list[UniverseEntry]:
     return [
-        UniverseEntry(id=sp.id, kind=sp.kind, role=sp.role, index=sp.index, note=sp.name)
+        UniverseEntry(
+            id=sp.id, kind=sp.kind, role=sp.role, index=sp.index, issuer=sp.issuer, note=sp.name
+        )
         for sp in specs
         if sp.in_universe
     ]
@@ -478,20 +569,22 @@ def _csv(header: list[str], rows: list[list]) -> str:
     return buf.getvalue()
 
 
-def write_dataset(ds: SynthDataset, out: Path | str) -> None:
+def write_dataset(ds: SynthDataset, out: Path | str, *, cassettes: bool = False) -> None:
+    """Пишет набор. Кассеты (около 8 МБ) по умолчанию не пишутся: `load_synth` строит их
+    из того же seed на лету, в git они не хранятся."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     if any(out.iterdir()) and not (out / "manifest.json").exists():
         raise ValueError(f"{out} не пуст и не похож на синтетический набор: не перезаписываю")
     by_id = {sp.id: sp for sp in ds.specs}
-    brands = {
-        key: {"uid": _uid("brand", key), "name": b[0], "company": b[1], "sector": b[2],
-              "description": b[3], "countryOfRisk": "SY"}
-        for key, b in BRANDS.items()
-    }  # fmt: skip
+    brands = _brands()
     instruments = [
         _card(sp)["instrument"]
-        | {"role": sp.role, "index": sp.index, "brandUid": brands[sp.brand]["uid"]}
+        | {
+            "role": sp.role,
+            "index": sp.index,
+            "brandUid": brands[sp.brand]["uid"] if sp.brand else None,
+        }
         for sp in ds.specs
     ]
     (out / "instruments.json").write_text(_dump(instruments), encoding="utf-8")
@@ -500,7 +593,10 @@ def write_dataset(ds: SynthDataset, out: Path | str) -> None:
         [sp.id, c["date"], c["open"], c["high"], c["low"], c["close"], c["volume"]]
         for sp in ds.specs
         if sp.in_universe
-        for c in ds.candles[sp.id]
+        for c in ds.stored_candles(sp.id)
+    ] + [
+        [f"{INDEX_ID}_INDEX", c["date"], "", "", "", c["close"], c["volume"]]
+        for c in ds.index_candles
     ]
     (out / "candles.csv").write_text(
         _csv(["instrument_id", "date", "open", "high", "low", "close", "volume"], candle_rows),
@@ -523,18 +619,44 @@ def write_dataset(ds: SynthDataset, out: Path | str) -> None:
         ),
         encoding="utf-8",
     )
-    _write_cassettes(ds, out / "cassettes", brands, entries)
+    if cassettes:
+        root = out / "cassettes"
+        if root.exists():
+            shutil.rmtree(root)
+        write_cassettes(ds, root)
 
 
-def _write_cassettes(
-    ds: SynthDataset, root: Path, brands: dict, entries: list[UniverseEntry]
-) -> None:
-    if root.exists():
-        if root.name != "cassettes" or not (root.parent / "manifest.json").exists():
-            raise ValueError(f"Отказ удалять {root}: это не каталог кассет синтетического набора")
-        shutil.rmtree(root)
+def _brands() -> dict:
+    return {
+        key: {"uid": _uid("brand", key), "name": b[0], "company": b[1], "sector": b[2],
+              "description": b[3], "countryOfRisk": "SY"}
+        for key, b in BRANDS.items()
+    }  # fmt: skip
+
+
+def _candle_payload(rows: list[dict], incomplete_last: bool = False) -> dict:
+    out = []
+    for i, c in enumerate(rows):
+        item = {"time": c["date"], "close": _q(c["close"]), "volume": str(c["volume"]),
+                "isComplete": not (incomplete_last and i == len(rows) - 1),
+                "candleSource": "CANDLE_SOURCE_EXCHANGE"}  # fmt: skip
+        for k in ("open", "high", "low"):
+            if c[k] is not None:
+                item[k] = _q(c[k])
+        out.append(item)
+    return {"priceCurrency": "rub", "candles": out}
+
+
+def write_cassettes(ds: SynthDataset, root: Path | str) -> None:
+    """Кассеты в формате ответов MCP для `fm ingest --mode replay` по синтетике."""
+    root = Path(root)
+    if root.exists() and any(root.iterdir()):
+        raise ValueError(f"{root} не пуст: кассеты пишутся только в пустой каталог")
+    brands = _brands()
+    entries = _entries(ds.specs)
     cas = Cassette(root)
     by_id = {sp.id: sp for sp in ds.specs}
+    last = ds.last_date.isoformat()
     for sp in ds.specs:
         e = UniverseEntry(id=sp.id, kind=sp.kind, role=sp.role, index=sp.index)
         card = _card(sp)
@@ -544,30 +666,37 @@ def _write_cassettes(
             find_args = {"query": sp.id, "responseView": FIND_ARGS_VIEW}
             cas.save("invest_find_instrument", find_args, {"instruments": [item]})
             continue
-        b = brands[sp.brand]
         asset = {
             "uid": _uid("asset", sp.id),
-            "name": f"{b['company']}: {sp.name}",
+            "name": sp.name,
             "type": "ASSET_TYPE_SECURITY",
-            "brand": {"uid": b["uid"]},
             "instruments": [{"ticker": sp.id, "classCode": "SYN"}],
         }
+        if sp.brand:
+            b = brands[sp.brand]
+            asset["brand"] = {"uid": b["uid"]}
+            cas.save("invest_get_brand", {"id": b["uid"]}, {"brand": b})
         cas.save("invest_get_asset", {"id": asset["uid"]}, {"asset": asset})
-        cas.save("invest_get_brand", {"id": b["uid"]}, {"brand": b})
-        first = date.fromisoformat(ds.candles[sp.id][0]["date"])  # конвейер начинает с листинга
-        for frm, to in candle_windows(first, ds.last_date):
+        rows_all = ds.candles[sp.id]
+        incomplete = sp.id == INCOMPLETE_LAST_ID
+        first = date.fromisoformat(rows_all[0]["date"])  # конвейер начинает с листинга
+        windows = candle_windows(first, ds.last_date)
+        if incomplete:  # повторный запуск догружает с последней сохранённой (предпоследней) даты
+            prev = date.fromisoformat(ds.stored_candles(sp.id)[-1]["date"])
+            windows += candle_windows(prev, ds.last_date)
+        for frm, to in windows:
             lo, hi = frm[:10], to[:10]
-            rows = [c for c in ds.candles[sp.id] if lo <= c["date"] < hi]
-            payload = {
-                "priceCurrency": "rub",
-                "candles": [
-                    {"time": c["date"], "open": _q(c["open"]), "high": _q(c["high"]),
-                     "low": _q(c["low"]), "close": _q(c["close"]), "volume": str(c["volume"]),
-                     "isComplete": True, "candleSource": "CANDLE_SOURCE_EXCHANGE"}
-                    for c in rows
-                ],
-            }  # fmt: skip
-            cas.save("invest_get_candles", candle_args(sp.id, frm, to), payload)
+            rows = [c for c in rows_all if lo <= c["date"] < hi]
+            has_last = bool(rows) and rows[-1]["date"] == last
+            cas.save(
+                "invest_get_candles",
+                candle_args(sp.id, frm, to),
+                _candle_payload(rows, incomplete_last=incomplete and has_last),
+            )
+    for frm, to in candle_windows(ds.dates[0], ds.last_date):
+        lo, hi = frm[:10], to[:10]
+        rows = [c for c in ds.index_candles if lo <= c["date"] < hi]
+        cas.save("invest_get_candles", candle_args(INDEX_MCP_ID, frm, to), _candle_payload(rows))
     ids = [e.id for e in entries]
     for i in range(0, len(ids), RISK_BATCH):
         batch = ids[i : i + RISK_BATCH]

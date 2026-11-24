@@ -1,1 +1,0 @@
-{"arguments":{"id":"syn-asset-syn-met1"},"result":{"asset":{"brand":{"uid":"syn-brand-met1"},"instruments":[{"classCode":"SYN","ticker":"SYN_MET1"}],"name":"ПАО «Синтметалл»: Синтметалл","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-met1"}},"tool":"invest_get_asset"}

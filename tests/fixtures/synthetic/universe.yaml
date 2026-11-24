@@ -78,7 +78,8 @@
 - id: SYN_GRPDEV_B
   kind: bond
   role: corp_bond
-  note: СинтСтрой 002P-01
+  issuer: ПАО «СинтСтрой»
+  note: СинтСтрой-Финанс 002P-01
 - id: SYN_NEWCO
   kind: share
   role: share
@@ -93,6 +94,11 @@
   role: index_fund
   index: SYNIDX
   note: Первая Синт — Фонд индекса SYNIDX
+- id: SYN_IDXC
+  kind: etf
+  role: index_fund
+  index: SYNIDX
+  note: Синт-Атон Индекс SYNIDX
 - id: SYN_TOPCO
   kind: etf
   role: active_fund
@@ -109,6 +115,10 @@
   kind: etf
   role: money_fund
   note: Синт Ликвидность
+- id: SYN_BONDF
+  kind: etf
+  role: bond_fund
+  note: Синт Облигации
 - id: SYN_OFZS
   kind: bond
   role: ofz

@@ -10,10 +10,18 @@
  "bank1": {
   "company": "ПАО «Синтбанк»",
   "countryOfRisk": "SY",
-  "description": "Крупнейший универсальный банк: кредиты, вклады, платежи. Обыкновенные и привилегированные акции.",
-  "name": "Синтбанк",
+  "description": "Крупнейший универсальный банк: кредиты, вклады, платежи.",
+  "name": "Синтбанк ао",
   "sector": "financial",
   "uid": "syn-brand-bank1"
+ },
+ "bank1p": {
+  "company": "ПАО «Синтбанк»",
+  "countryOfRisk": "SY",
+  "description": "Привилегированные акции крупнейшего универсального банка.",
+  "name": "Синтбанк ап",
+  "sector": "financial",
+  "uid": "syn-brand-bank1p"
  },
  "bank2": {
   "company": "ПАО «Банк Синт-Капитал»",
@@ -22,6 +30,14 @@
   "name": "Банк Синт-Капитал",
   "sector": "financial",
   "uid": "syn-brand-bank2"
+ },
+ "bondf": {
+  "company": "УК «Синт-Капитал»",
+  "countryOfRisk": "SY",
+  "description": "Фонд государственных и корпоративных облигаций.",
+  "name": "Синт Облигации",
+  "sector": "",
+  "uid": "syn-brand-bondf"
  },
  "divact": {
   "company": "УК «Синт-Актив»",
@@ -36,7 +52,7 @@
   "countryOfRisk": "SY",
   "description": "Фонд физического золота.",
   "name": "Синт Золото",
-  "sector": "other",
+  "sector": "",
   "uid": "syn-brand-gold"
  },
  "grp": {
@@ -55,6 +71,14 @@
   "sector": "real_estate",
   "uid": "syn-brand-grpdev"
  },
+ "grpdevfin": {
+  "company": "ООО «СинтСтрой-Финанс»",
+  "countryOfRisk": "SY",
+  "description": "Финансовая компания группы СинтСтрой: выпуск облигаций.",
+  "name": "СинтСтрой-Финанс",
+  "sector": "real_estate",
+  "uid": "syn-brand-grpdevfin"
+ },
  "grpfor": {
   "company": "ПАО «СинтЛес»",
   "countryOfRisk": "SY",
@@ -67,9 +91,17 @@
   "company": "ПАО «СинтМобайл»",
   "countryOfRisk": "SY",
   "description": "Мобильная связь и цифровые сервисы.",
-  "name": "СинтМобайл",
+  "name": "СинтМобайл ао",
   "sector": "telecom",
   "uid": "syn-brand-grptel"
+ },
+ "grptel_b": {
+  "company": "ПАО «СинтМобайл»",
+  "countryOfRisk": "SY",
+  "description": "Облигации оператора мобильной связи.",
+  "name": "СинтМобайл",
+  "sector": "telecom",
+  "uid": "syn-brand-grptel-b"
  },
  "idxa": {
   "company": "УК «Синт-Капитал»",
@@ -116,7 +148,7 @@
   "countryOfRisk": "SY",
   "description": "Фонд денежного рынка: сделки обратного РЕПО с ЦК.",
   "name": "Синт Ликвидность",
-  "sector": "other",
+  "sector": "",
   "uid": "syn-brand-money"
  },
  "newco": {

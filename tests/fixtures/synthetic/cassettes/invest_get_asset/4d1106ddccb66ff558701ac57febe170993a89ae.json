@@ -1,1 +1,0 @@
-{"arguments":{"id":"syn-asset-syn-gold"},"result":{"asset":{"brand":{"uid":"syn-brand-gold"},"instruments":[{"classCode":"SYN","ticker":"SYN_GOLD"}],"name":"УК «Синт-Капитал»: Синт Золото","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-gold"}},"tool":"invest_get_asset"}

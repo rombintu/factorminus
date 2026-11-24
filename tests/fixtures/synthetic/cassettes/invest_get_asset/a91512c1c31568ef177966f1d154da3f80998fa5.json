@@ -1,1 +1,0 @@
-{"arguments":{"id":"syn-asset-syn-retail1"},"result":{"asset":{"brand":{"uid":"syn-brand-retail1"},"instruments":[{"classCode":"SYN","ticker":"SYN_RETAIL1"}],"name":"ПАО «СинтМаркет»: СинтМаркет","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-retail1"}},"tool":"invest_get_asset"}
