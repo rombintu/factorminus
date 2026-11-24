@@ -19,7 +19,7 @@ from typing import Any
 import httpx
 
 from factorminus import __version__
-from factorminus.config import Settings
+from factorminus.config import REPO_ROOT, Settings
 from factorminus.mcp.allowlist import ensure_allowed
 from factorminus.mcp.cassette import MODES, Cassette, Mode
 from factorminus.mcp.errors import McpError, McpToolError, McpTransportError
@@ -30,6 +30,8 @@ PROTOCOL_VERSION = "2025-03-26"
 TIMEOUT_S = 30.0
 META_TOOL = "_meta"
 TOOLS_LIST_ARGS = {"method": "tools/list"}
+DEFAULT_CASSETTE_DIR = REPO_ROOT / "data" / "cassettes"
+MAX_ERROR_LEN = 300
 
 
 class RateLimiter:
@@ -94,14 +96,14 @@ def _parse_body(response: httpx.Response, rid: int) -> dict:
     raise McpTransportError(f"В ответе MCP нет сообщения с id={rid}")
 
 
-def _unwrap_result(name: str, msg: dict) -> Any:
+def _unwrap_result(name: str, msg: dict, scrub: Callable[[str], str]) -> Any:
     if "error" in msg:
         err = msg["error"] or {}
-        raise McpToolError(name, str(err.get("message") or err))
+        raise McpToolError(name, scrub(str(err.get("message") or err)))
     result = msg.get("result") or {}
     texts = [c.get("text", "") for c in result.get("content", []) if c.get("type") == "text"]
     if result.get("isError"):
-        raise McpToolError(name, "\n".join(texts) or "isError без текста")
+        raise McpToolError(name, scrub("\n".join(texts) or "isError без текста"))
     if not texts:
         return result.get("structuredContent", result)
     parsed: list[Any] = []
@@ -119,7 +121,7 @@ class McpClient:
         settings: Settings,
         *,
         mode: Mode = "live",
-        cassette_dir: Path | str = Path("data/cassettes"),
+        cassette_dir: Path | str = DEFAULT_CASSETTE_DIR,
         transport: httpx.BaseTransport | None = None,
         max_rpm: int = 180,
         retries: int = 3,
@@ -139,11 +141,13 @@ class McpClient:
         self._initialized = False
         self._next_id = 0
         self._http: httpx.Client | None = None
+        self._token: str | None = None
         if mode != "replay":
             token = settings.require_token()
+            self._token = token
             self._http = httpx.Client(
                 timeout=TIMEOUT_S,
-                verify=settings.verify(),
+                verify=settings.ssl_verify(),
                 transport=transport,
                 headers={
                     "Authorization": f"Bearer {token}",
@@ -166,6 +170,14 @@ class McpClient:
         if self._http is not None:
             self._http.close()
 
+    def _scrub(self, text: str) -> str:
+        """Убирает токен из текста ошибки и обрезает длинные сообщения."""
+        if self._token:
+            text = text.replace(self._token, "t.***")
+        if len(text) > MAX_ERROR_LEN:
+            text = text[:MAX_ERROR_LEN] + "…"
+        return text
+
     # --- публичный API ---
 
     def call_tool(self, name: str, arguments: dict | None = None) -> Any:
@@ -175,7 +187,7 @@ class McpClient:
             return self.cassette.load(name, arguments)
         started = time.perf_counter()
         msg, size = self._request("tools/call", {"name": name, "arguments": arguments})
-        result = _unwrap_result(name, msg)
+        result = _unwrap_result(name, msg, self._scrub)
         log.info(
             "mcp %s args=%s %.0f ms %d B",
             name,
@@ -192,7 +204,7 @@ class McpClient:
             return list(self.cassette.load(META_TOOL, TOOLS_LIST_ARGS))
         msg, size = self._request("tools/list", {})
         if "error" in msg:
-            raise McpToolError("tools/list", str(msg["error"]))
+            raise McpToolError("tools/list", self._scrub(str(msg["error"])))
         names = [t["name"] for t in (msg.get("result") or {}).get("tools", [])]
         log.info("mcp tools/list -> %d tools, %d B", len(names), size)
         if self.mode == "record":
@@ -216,7 +228,7 @@ class McpClient:
         resp = self._post({"jsonrpc": "2.0", "id": rid, "method": "initialize", "params": params})
         msg = _parse_body(resp, rid)
         if "error" in msg:
-            raise McpTransportError(f"initialize отклонён: {msg['error']}")
+            raise McpTransportError(self._scrub(f"initialize отклонён: {msg['error']}"))
         self._session_id = resp.headers.get("mcp-session-id")
         self._post({"jsonrpc": "2.0", "method": "notifications/initialized"})
         self._initialized = True
@@ -253,7 +265,7 @@ class McpClient:
             try:
                 resp = self._http.post(self.settings.mcp_url, json=payload, headers=headers)
             except httpx.TransportError as e:
-                last = f"сетевая ошибка: {type(e).__name__}: {e}"
+                last = f"сетевая ошибка: {type(e).__name__}"
                 continue
             if resp.status_code == 429 or resp.status_code >= 500:
                 last = f"HTTP {resp.status_code}"
@@ -268,6 +280,6 @@ class McpClient:
                     f"HTTP {resp.status_code}: токен отклонён (проверьте TINVEST_TOKEN)"
                 )
             if resp.status_code >= 400:
-                raise McpTransportError(f"HTTP {resp.status_code}: {resp.text[:200]}")
+                raise McpTransportError(self._scrub(f"HTTP {resp.status_code}: {resp.text}"))
             return resp
         raise McpTransportError(f"MCP недоступен после {self.retries} попыток: {last}")

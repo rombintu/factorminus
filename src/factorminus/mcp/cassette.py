@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any, Literal
 
@@ -14,6 +15,7 @@ from factorminus.mcp.errors import CassetteMissError
 
 Mode = Literal["live", "record", "replay"]
 MODES: tuple[str, ...] = ("live", "record", "replay")
+_TOOL_RE = re.compile(r"^[a-z0-9_]+$")
 
 
 def canonical_json(obj: Any) -> str:
@@ -29,6 +31,8 @@ class Cassette:
         return hashlib.sha1(canonical_json(args).encode("utf-8")).hexdigest()
 
     def path(self, tool: str, args: dict) -> Path:
+        if not _TOOL_RE.match(tool):
+            raise ValueError(f"Недопустимое имя инструмента для кассеты: {tool!r}")
         return self.root / tool / f"{self.key(tool, args)}.json"
 
     def load(self, tool: str, args: dict) -> Any:

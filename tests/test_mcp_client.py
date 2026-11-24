@@ -255,3 +255,41 @@ def test_rate_limiter_waits_when_window_full():
     assert sleeps == []
     limiter.acquire()  # 4-й в окне 60 с ждёт, пока выйдет первый
     assert sleeps == [pytest.approx(57.0)]
+
+
+def test_transport_error_message_scrubbed():
+    def boom(request):
+        raise httpx.ConnectError(f"failed with Bearer {TOKEN}")
+
+    client = McpClient(settings(), transport=httpx.MockTransport(boom), sleep=lambda s: None)
+    with pytest.raises(McpTransportError) as ei:
+        client.call_tool("invest_get_share", {})
+    assert TOKEN not in str(ei.value)
+    assert "FAKE-TOKEN" not in str(ei.value)
+
+
+def test_server_error_text_scrubbed_and_capped():
+    server = FakeServer()
+    server.tool_results["invest_get_share"] = {
+        "isError": True,
+        "content": [{"type": "text", "text": f"echo Bearer {TOKEN} " + "x" * 5000}],
+    }
+    client, _ = make(server)
+    with pytest.raises(McpToolError) as ei:
+        client.call_tool("invest_get_share", {})
+    assert TOKEN not in str(ei.value)
+    assert len(str(ei.value)) < 1000
+
+
+def test_cassette_rejects_bad_tool_name(tmp_path):
+    from factorminus.mcp.cassette import Cassette
+
+    with pytest.raises(ValueError):
+        Cassette(tmp_path).path("../evil", {})
+
+
+def test_default_cassette_dir_anchored_to_repo():
+    from factorminus.config import REPO_ROOT
+
+    client = McpClient(Settings(token=None), mode="replay")
+    assert client.cassette.root == REPO_ROOT / "data" / "cassettes"

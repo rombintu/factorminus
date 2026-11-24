@@ -3,13 +3,18 @@
 from __future__ import annotations
 
 import os
+import re
+import ssl
 import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import urlparse
 
 DEFAULT_MCP_URL = "https://invest-public-api.tbank.ru/mcp"
 DEFAULT_DB_PATH = "data/fm.sqlite"
+ALLOWED_MCP_HOST_SUFFIX = "tbank.ru"
+_TOKEN_RE = re.compile(r"^[\x21-\x7e]+$")
 
 
 def _find_repo_root() -> Path:
@@ -82,12 +87,16 @@ class Settings:
     def require_token(self) -> str:
         if not self.token:
             raise ConfigError("Токен не найден: задайте TINVEST_TOKEN в .env или в окружении")
+        if not _TOKEN_RE.match(self.token):
+            raise ConfigError(
+                "TINVEST_TOKEN содержит недопустимые символы (пробелы, переводы строк)"
+            )
         return self.token
 
     def verify(self) -> bool | str:
         """Значение для `httpx.Client(verify=...)`."""
         if self.insecure_ssl:
-            if os.environ.get("PYTEST_CURRENT_TEST"):
+            if os.environ.get("PYTEST_CURRENT_TEST") or "pytest" in sys.modules:
                 raise ConfigError("TINVEST_INSECURE_SSL=1 запрещён в тестах")
             print(
                 "ВНИМАНИЕ: TINVEST_INSECURE_SSL=1, проверка TLS-сертификата отключена. "
@@ -96,6 +105,28 @@ class Settings:
             )
             return False
         return self.ca_bundle or True
+
+    def ssl_verify(self) -> ssl.SSLContext | bool:
+        """Значение для `httpx.Client(verify=...)`: контекст с CA-бандлом или системный."""
+        verify = self.verify()
+        if isinstance(verify, str):
+            if not Path(verify).is_file():
+                raise ConfigError(f"TINVEST_CA_BUNDLE: файл не найден: {verify}")
+            return ssl.create_default_context(cafile=verify)
+        return verify
+
+
+def _check_mcp_url(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        raise ConfigError("TINVEST_MCP_URL должен начинаться с https://")
+    host = (parsed.hostname or "").lower()
+    if host != ALLOWED_MCP_HOST_SUFFIX and not host.endswith("." + ALLOWED_MCP_HOST_SUFFIX):
+        raise ConfigError(
+            f"TINVEST_MCP_URL: хост {host!r} не из домена {ALLOWED_MCP_HOST_SUFFIX}, "
+            "токен туда не отправляется"
+        )
+    return url
 
 
 def load_settings(env: Mapping[str, str] | None = None, env_file: Path | None = None) -> Settings:
@@ -112,7 +143,7 @@ def load_settings(env: Mapping[str, str] | None = None, env_file: Path | None = 
         db_path = REPO_ROOT / db_path
     return Settings(
         token=get("TINVEST_TOKEN"),
-        mcp_url=get("TINVEST_MCP_URL") or DEFAULT_MCP_URL,
+        mcp_url=_check_mcp_url(get("TINVEST_MCP_URL") or DEFAULT_MCP_URL),
         ca_bundle=get("TINVEST_CA_BUNDLE"),
         insecure_ssl=get("TINVEST_INSECURE_SSL") == "1",
         db_path=db_path,
