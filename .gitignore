@@ -4,3 +4,11 @@ AI
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# Secrets and local data
+.env
+.env.*
+!.env.example
+data/*
+!data/universe.yaml
+*.sqlite
