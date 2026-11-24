@@ -1,4 +1,5 @@
 import pytest
+
 from scripts_loader import load_script
 
 rn = load_script("release_notes")
