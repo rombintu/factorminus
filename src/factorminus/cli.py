@@ -5,11 +5,13 @@ from __future__ import annotations
 import functools
 import json
 import logging
+import sqlite3
 import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Any
 
+import httpx
 import typer
 
 from factorminus.config import REPO_ROOT, ConfigError, Settings, load_settings
@@ -55,8 +57,11 @@ def friendly_errors(fn: Callable[..., Any]) -> Callable[..., Any]:
     def wrapper(*args, **kwargs):
         try:
             return fn(*args, **kwargs)
-        except (ConfigError, McpError, FileNotFoundError, ValueError) as e:
+        except (ConfigError, McpError, FileNotFoundError, ValueError, sqlite3.Error) as e:
             typer.echo(f"Ошибка: {e}", err=True)
+            raise typer.Exit(2) from None
+        except httpx.HTTPError as e:
+            typer.echo(f"Ошибка сети: {type(e).__name__}: {e}", err=True)
             raise typer.Exit(2) from None
 
     return wrapper
@@ -77,7 +82,15 @@ def _db(settings: Settings, db: Path | None):
 def _client(settings: Settings, mode: str = "live", cassette_dir: Path | None = None):
     from factorminus.mcp.client import DEFAULT_CASSETTE_DIR, McpClient
 
-    return McpClient(settings, mode=mode, cassette_dir=cassette_dir or DEFAULT_CASSETTE_DIR)
+    cassette_dir = (cassette_dir or DEFAULT_CASSETTE_DIR).resolve()
+    data_dir = (REPO_ROOT / "data").resolve()
+    if mode == "record" and not cassette_dir.is_relative_to(data_dir):
+        typer.echo(
+            f"Внимание: кассеты с реальными ответами пишутся вне data/ ({cassette_dir}). "
+            "Не коммитьте их.",
+            err=True,
+        )
+    return McpClient(settings, mode=mode, cassette_dir=cassette_dir)
 
 
 # --- db ---
@@ -269,6 +282,8 @@ def ingest(
             mode=mode,
         )
     typer.echo(summary.text())
+    if not only and until is None and mode == "replay":
+        typer.echo("Подсказка: для replay реальных записей задайте --until датой записи.")
     if summary.errors:
         typer.echo(f"Ошибки: SELECT * FROM ingest_errors WHERE run_id={summary.run_id}")
 
@@ -287,6 +302,8 @@ def synth_generate(
     """Сгенерировать синтетический набор (детерминированно по seed)."""
     from factorminus.synth.generator import generate, write_dataset
 
+    if out.exists() and any(out.iterdir()) and not (out / "manifest.json").exists():
+        raise ValueError(f"{out} не пуст и не похож на синтетический набор: не перезаписываю")
     ds = generate(seed)
     write_dataset(ds, out)
     typer.echo(

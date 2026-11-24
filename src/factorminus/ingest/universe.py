@@ -10,7 +10,7 @@ import yaml
 from pydantic import BaseModel, ValidationError, field_validator, model_validator
 
 from factorminus.ingest.parse import parse_instrument
-from factorminus.mcp.errors import McpError
+from factorminus.mcp.errors import CassetteMissError, McpToolError
 
 Kind = Literal["share", "etf", "bond", "currency"]
 Role = Literal[
@@ -83,7 +83,7 @@ def verify_universe(client: Any, entries: list[UniverseEntry]) -> dict:
     for e in entries:
         try:
             row = parse_instrument(client.call_tool(GET_TOOL[e.kind], instrument_args(e)), e.kind)
-        except (McpError, ValueError) as ex:
+        except (McpToolError, CassetteMissError, ValueError) as ex:  # сеть и 401 — фатальны
             report["not_found"].append(e.id)
             report["details"][e.id] = {"status": "not_found", "error": str(ex)}
             continue

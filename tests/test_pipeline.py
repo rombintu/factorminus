@@ -189,10 +189,11 @@ def test_incremental_candles_from_last_date(conn):
     mcp.candle_days["SYN_A"].append("2024-01-15")
     s = run(conn, mcp, until=date(2024, 1, 20))
     froms = {a["instrumentId"]: a["from"] for n, a in mcp.calls if n == "invest_get_candles"}
-    assert froms["SYN_A"] == "2024-01-04T00:00:00Z"
-    assert froms["SYN_BOND"] == "2024-01-04T00:00:00Z"
-    assert froms["SYN_AP"] == "2024-01-03T00:00:00Z"
-    assert s.candles == 1
+    # окно начинается с последней сохранённой даты: пересечение в один день безопасно (UPSERT)
+    assert froms["SYN_A"] == "2024-01-03T00:00:00Z"
+    assert froms["SYN_BOND"] == "2024-01-03T00:00:00Z"
+    assert froms["SYN_AP"] == "2024-01-02T00:00:00Z"
+    assert s.candles == 1  # считаются только новые строки
 
 
 def test_incomplete_candles_skipped(conn):
@@ -222,3 +223,62 @@ def test_risk_rates_length_mismatch_is_error_not_crash(conn):
     s = run(conn, mcp)
     assert s.errors == 1
     assert conn.execute("SELECT step FROM ingest_errors").fetchone()[0] == "risk_rates"
+
+
+def test_incremental_keeps_candle_stamped_at_moscow_midnight(conn):
+    """Свеча дня D со временем D-1T21:00Z (полночь МСК) не теряется при догрузке."""
+    stamps = {
+        "2024-01-02": "2024-01-01T21:00:00Z",
+        "2024-01-03": "2024-01-02T21:00:00Z",
+        "2024-01-04": "2024-01-03T21:00:00Z",
+    }
+    visible = ["2024-01-02", "2024-01-03"]
+
+    class Boundary(FakeMcp):
+        def call_tool(self, name, args):
+            if name == "invest_get_candles":
+                self.calls.append((name, args))
+                lo, hi = args["from"], args["to"]
+                return {
+                    "candles": [
+                        {"time": stamps[d], "close": {"value": "1"}, "isComplete": True}
+                        for d in visible
+                        if lo <= stamps[d] < hi
+                    ]
+                }
+            return super().call_tool(name, args)
+
+    mcp = Boundary()
+    entries = [UniverseEntry(id="SYN_A", kind="share", role="share")]
+    run_ingest(conn, mcp, entries, since=date(2024, 1, 1), until=date(2024, 1, 3), mode="live")
+    visible.append("2024-01-04")
+    run_ingest(conn, mcp, entries, since=date(2024, 1, 1), until=date(2024, 1, 5), mode="live")
+    days = [r[0] for r in conn.execute("SELECT date FROM candles ORDER BY date")]
+    assert days == ["2024-01-02", "2024-01-03", "2024-01-04"]
+
+
+def test_since_earlier_than_stored_backfills(conn):
+    mcp = FakeMcp()
+    run_ingest(conn, mcp, ENTRIES[:1], since=date(2024, 1, 3), until=date(2024, 1, 10), mode="live")
+    assert conn.execute("SELECT MIN(date) FROM candles").fetchone()[0] == "2024-01-03"
+    s = run_ingest(
+        conn, mcp, ENTRIES[:1], since=date(2024, 1, 1), until=date(2024, 1, 10), mode="live"
+    )
+    assert conn.execute("SELECT MIN(date) FROM candles").fetchone()[0] == "2024-01-02"
+    assert s.candles == 1
+
+
+def test_transport_error_aborts_run(conn):
+    from factorminus.mcp.errors import McpTransportError
+
+    class Down(FakeMcp):
+        def call_tool(self, name, args):
+            self.calls.append((name, args))
+            raise McpTransportError("HTTP 401: токен отклонён")
+
+    mcp = Down()
+    with pytest.raises(McpTransportError):
+        run(conn, mcp)
+    assert len(mcp.calls) == 1  # не долбим сервер по каждой бумаге
+    row = conn.execute("SELECT finished_at, notes FROM ingest_runs").fetchone()
+    assert row["finished_at"] and "прерван" in row["notes"]

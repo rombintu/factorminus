@@ -32,6 +32,7 @@ META_TOOL = "_meta"
 TOOLS_LIST_ARGS = {"method": "tools/list"}
 DEFAULT_CASSETTE_DIR = REPO_ROOT / "data" / "cassettes"
 MAX_ERROR_LEN = 300
+MAX_RETRY_AFTER_S = 30.0
 
 
 class RateLimiter:
@@ -258,9 +259,14 @@ class McpClient:
         assert self._http is not None
         headers = {"Mcp-Session-Id": self._session_id} if self._session_id else {}
         last = ""
+        retry_after: float | None = None
         for attempt in range(self.retries):
             if attempt:
-                self.sleep(self.backoff * 2 ** (attempt - 1))
+                delay = self.backoff * 2 ** (attempt - 1)
+                if retry_after is not None:
+                    delay = max(delay, min(retry_after, MAX_RETRY_AFTER_S))
+                self.sleep(delay)
+                retry_after = None
             self.limiter.acquire()
             try:
                 resp = self._http.post(self.settings.mcp_url, json=payload, headers=headers)
@@ -269,6 +275,10 @@ class McpClient:
                 continue
             if resp.status_code == 429 or resp.status_code >= 500:
                 last = f"HTTP {resp.status_code}"
+                try:
+                    retry_after = float(resp.headers.get("retry-after", ""))
+                except ValueError:
+                    retry_after = None
                 continue
             if self._session_id and (
                 resp.status_code == 404

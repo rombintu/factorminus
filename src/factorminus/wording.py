@@ -10,10 +10,10 @@ from typing import Any
 
 # Основы слов-советов. «покупка», «продажа», «стоимость» — факты, они разрешены.
 FORBIDDEN_PATTERNS: dict[str, re.Pattern[str]] = {
-    "купите": re.compile(r"\bкупи(те)?\b", re.IGNORECASE),
-    "продайте": re.compile(r"\bпродай(те)?\b", re.IGNORECASE),
+    "купите": re.compile(r"\b(до)?купи(те)?\b|\bпокупай(те)?\b", re.IGNORECASE),
+    "продайте": re.compile(r"\bпрода(й|йте|вай|вайте)\b", re.IGNORECASE),
     "рекомендуем": re.compile(r"\bрекоменд\w*", re.IGNORECASE),
-    "советуем": re.compile(r"\bсовет(ую|уем|уете|ую)\w*", re.IGNORECASE),
+    "советуем": re.compile(r"\bсовет(ую|уем|уете)\b", re.IGNORECASE),
     "лучше": re.compile(r"\bлучше\b", re.IGNORECASE),
     "стоит": re.compile(r"\bстоит\b", re.IGNORECASE),
 }

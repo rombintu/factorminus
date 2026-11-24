@@ -69,3 +69,14 @@ def test_store_idempotent(tmp_path):
     store_index_weights(conn, "SYNIDX", rows)
     got = conn.execute("SELECT ticker, weight FROM index_weights ORDER BY ticker").fetchall()
     assert [tuple(r) for r in got] == [("SYNA", 61.0), ("SYNB", 39.5)]
+
+
+def test_parse_missing_column_is_value_error():
+    with pytest.raises(ValueError):
+        parse_iss_analytics({"analytics": {"columns": ["ticker"], "data": [["X"]]}})
+
+
+@pytest.mark.parametrize("bad", ["imoex", "IMOEX/../x", "IMOEX?a=1", "", "A" * 20])
+def test_index_id_validated(bad):
+    with pytest.raises(ValueError):
+        fetch_index_weights(bad, transport=httpx.MockTransport(lambda r: httpx.Response(200)))

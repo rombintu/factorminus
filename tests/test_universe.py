@@ -108,3 +108,12 @@ def test_real_universe_file_is_valid():
     roles = {e.role for e in entries}
     assert {"index_fund", "share", "ofz", "corp_bond", "gold_fund", "money_fund"} <= roles
     assert sum(e.role == "index_fund" for e in entries) >= 3
+
+
+def test_verify_universe_transport_error_is_fatal():
+    from factorminus.mcp.errors import McpTransportError
+
+    entries = [UniverseEntry(id="SYN_A", kind="share", role="share")]
+    client = FakeClient({"SYN_A": McpTransportError("HTTP 401")})
+    with pytest.raises(McpTransportError):
+        verify_universe(client, entries)

@@ -19,13 +19,15 @@ from factorminus.ingest.parse import (
     parse_risk_rates,
 )
 from factorminus.ingest.universe import GET_TOOL, UniverseEntry, instrument_args
-from factorminus.mcp.errors import McpError
+from factorminus.mcp.errors import CassetteMissError, McpToolError, McpTransportError
 
 log = logging.getLogger("factorminus.ingest")
 
 RISK_BATCH = 50
 CANDLE_WINDOW_DAYS = 365
-_STEP_ERRORS = (McpError, ValueError, KeyError, TypeError)
+# Ошибки одной бумаги: пишутся в ingest_errors, конвейер идёт дальше.
+# McpTransportError (сеть, 401/403, исчерпаны повторы) сюда не входит: она прерывает запуск.
+_STEP_ERRORS = (McpToolError, CassetteMissError, ValueError, KeyError, TypeError)
 
 
 def candle_windows(
@@ -160,31 +162,52 @@ class _Run:
         self.brand_cache.add(brand_uid)
         self.summary.brands += 1
 
-    def candles(self, e: UniverseEntry, since: date, until: date) -> None:
-        last = self.conn.execute(
-            "SELECT MAX(date) FROM candles WHERE instrument_id=?", (e.id,)
-        ).fetchone()[0]
-        start = date.fromisoformat(last) + timedelta(days=1) if last else since
-        for frm, to in candle_windows(start, until):
-            try:
-                rows = parse_candles(
-                    self.client.call_tool("invest_get_candles", candle_args(e.id, frm, to))
-                )
-            except _STEP_ERRORS as ex:
-                self.error(e.id, "candles", ex)
-                return
-            before = self.conn.total_changes
-            self.conn.execute("BEGIN")
+    def candles(
+        self, e: UniverseEntry, since: date, until: date, listed: str | None = None
+    ) -> None:
+        first, last = self.conn.execute(
+            "SELECT MIN(date), MAX(date) FROM candles WHERE instrument_id=?", (e.id,)
+        ).fetchone()
+        spans: list[tuple[date, date]] = []
+        if last is None:
+            spans.append((since, until))
+        else:
+            # --since раньше сохранённой истории, и бумага тогда уже торговалась
+            if since < date.fromisoformat(first) and (listed is None or listed < first):
+                spans.append((since, date.fromisoformat(first) - timedelta(days=1)))
+            # С последней сохранённой даты, а не со следующей: свеча дня может иметь время
+            # в полночь МСК (предыдущий день по UTC). Пересечение в день безопасно (UPSERT).
+            if date.fromisoformat(last) < until:  # история уже до until — догружать нечего
+                spans.append((date.fromisoformat(last), until))
+        for start, end in spans:
+            for frm, to in candle_windows(start, end):
+                try:
+                    rows = parse_candles(
+                        self.client.call_tool("invest_get_candles", candle_args(e.id, frm, to))
+                    )
+                except _STEP_ERRORS as ex:
+                    self.error(e.id, "candles", ex)
+                    return
+                self.summary.candles += self._store_candles(e.id, rows)
+
+    def _store_candles(self, instrument_id: str, rows: list[dict]) -> int:
+        count = "SELECT COUNT(*) FROM candles WHERE instrument_id=?"
+        before = self.conn.execute(count, (instrument_id,)).fetchone()[0]
+        self.conn.execute("BEGIN")
+        try:
             self.conn.executemany(
                 "INSERT INTO candles(instrument_id, date, open, high, low, close, volume) "
                 "VALUES (:iid, :date, :open, :high, :low, :close, :volume) "
                 "ON CONFLICT(instrument_id, date) DO UPDATE SET open=excluded.open, "
                 "high=excluded.high, low=excluded.low, close=excluded.close, "
                 "volume=excluded.volume",
-                [dict(r, iid=e.id) for r in rows],
+                [dict(r, iid=instrument_id) for r in rows],
             )
             self.conn.execute("COMMIT")
-            self.summary.candles += self.conn.total_changes - before
+        except Exception:
+            self.conn.execute("ROLLBACK")
+            raise
+        return self.conn.execute(count, (instrument_id,)).fetchone()[0] - before
 
     def risk_rates(self, loaded: list[tuple[str, dict]]) -> None:
         for i in range(0, len(loaded), RISK_BATCH):
@@ -240,19 +263,26 @@ def run_ingest(
 ) -> IngestSummary:
     started = time.perf_counter()
     run = _Run(conn, client, mode, source)
-    loaded: list[tuple[str, dict]] = []
-    for e in entries:
-        card = run.card(e)
-        if card is None:
-            continue
-        loaded.append((e.id, card))
-        run.asset_and_brand(e, card["asset_uid"])
-        run.candles(e, since, until)
-    run.risk_rates(loaded)
     s = run.summary
-    s.seconds = time.perf_counter() - started
-    conn.execute(
-        "UPDATE ingest_runs SET finished_at=?, ok_count=?, error_count=?, notes=? WHERE run_id=?",
-        (now_iso(), s.instruments, s.errors, s.text(), run.run_id),
-    )
+    notes = ""
+    try:
+        loaded: list[tuple[str, dict]] = []
+        for e in entries:
+            card = run.card(e)
+            if card is None:
+                continue
+            loaded.append((e.id, card))
+            run.asset_and_brand(e, card["asset_uid"])
+            run.candles(e, since, until, listed=card["first_day_candle"])
+        run.risk_rates(loaded)
+    except McpTransportError as ex:
+        notes = f"прерван: {ex}"
+        raise
+    finally:
+        s.seconds = time.perf_counter() - started
+        conn.execute(
+            "UPDATE ingest_runs SET finished_at=?, ok_count=?, error_count=?, notes=? "
+            "WHERE run_id=?",
+            (now_iso(), s.instruments, s.errors, notes or None, run.run_id),
+        )
     return s

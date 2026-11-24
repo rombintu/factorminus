@@ -13,7 +13,9 @@ dependencies = [
   "pydantic>=2.6",
   "typer>=0.12",
   "pyyaml>=6",
-  "numpy>=1.26",
+  # Потоки numpy.random.Generator не обещают стабильность между мажорными версиями:
+  # фикстуры синтетики сверяются тестом, при смене версии их надо перегенерировать.
+  "numpy>=1.26,<3",
 ]
 
 [project.optional-dependencies]
@@ -21,7 +23,7 @@ ml = ["laya==0.5.1"]
 dev = ["pytest>=8", "ruff>=0.6"]
 
 [project.scripts]
-fm = "factorminus.cli:app"
+fm = "factorminus.cli:run"
 
 [tool.setuptools.packages.find]
 where = ["src"]

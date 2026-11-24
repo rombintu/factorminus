@@ -293,3 +293,12 @@ def test_default_cassette_dir_anchored_to_repo():
 
     client = McpClient(Settings(token=None), mode="replay")
     assert client.cassette.root == REPO_ROOT / "data" / "cassettes"
+
+
+def test_retry_after_respected_and_capped():
+    server = FakeServer()
+    server.queue.append(httpx.Response(429, headers={"Retry-After": "3"}))
+    server.queue.append(httpx.Response(429, headers={"Retry-After": "9999"}))
+    client, sleeps = make(server)
+    client.call_tool("invest_get_share", {})
+    assert sleeps == [3.0, 30.0]

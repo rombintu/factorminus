@@ -337,8 +337,8 @@ def _card(sp: Spec) -> dict:
         "apiTradeAvailableFlag": sp.kind == "share",
         "exchange": "SYN",
     }
-    if sp.history_days == N_DAYS:
-        d["first1dayCandleDate"] = f"{SYNTH_START.isoformat()}T07:00:00Z"
+    first = business_days(SYNTH_START, N_DAYS)[-sp.history_days]
+    d["first1dayCandleDate"] = f"{first.isoformat()}T07:00:00Z"
     if sp.kind == "bond":
         d["maturityDate"] = sp.maturity
     return {"instrument": d}
@@ -367,6 +367,8 @@ def _csv(header: list[str], rows: list[list]) -> str:
 def write_dataset(ds: SynthDataset, out: Path | str) -> None:
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
+    if any(out.iterdir()) and not (out / "manifest.json").exists():
+        raise ValueError(f"{out} не пуст и не похож на синтетический набор: не перезаписываю")
     by_id = {sp.id: sp for sp in ds.specs}
     brands = {
         key: {"uid": _uid("brand", key), "name": b[0], "company": b[1], "sector": b[2],
@@ -414,6 +416,8 @@ def _write_cassettes(
     ds: SynthDataset, root: Path, brands: dict, entries: list[UniverseEntry]
 ) -> None:
     if root.exists():
+        if root.name != "cassettes" or not (root.parent / "manifest.json").exists():
+            raise ValueError(f"Отказ удалять {root}: это не каталог кассет синтетического набора")
         shutil.rmtree(root)
     cas = Cassette(root)
     by_id = {sp.id: sp for sp in ds.specs}
