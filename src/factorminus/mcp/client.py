@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 import logging
 import time
-from collections import deque
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -33,10 +32,15 @@ TOOLS_LIST_ARGS = {"method": "tools/list"}
 DEFAULT_CASSETTE_DIR = REPO_ROOT / "data" / "cassettes"
 MAX_ERROR_LEN = 300
 MAX_RETRY_AFTER_S = 30.0
+RATE_LIMITED_BACKOFF_S = 5.0  # базовая пауза после 429 без Retry-After
 
 
 class RateLimiter:
-    """Не больше `max_per_minute` событий в скользящем окне 60 секунд."""
+    """Не больше `max_per_minute` запросов в минуту, равномерно: интервал 60/max секунд.
+
+    Скользящее окно пропускало всплеск (150 запросов за 15 с), и сервер отвечал 429
+    (проверено 24.11.2026), поэтому запросы разносятся по времени.
+    """
 
     def __init__(
         self,
@@ -44,24 +48,17 @@ class RateLimiter:
         clock: Callable[[], float] = time.monotonic,
         sleep: Callable[[float], None] = time.sleep,
     ):
-        self.max = max_per_minute
+        self.interval = 60.0 / max_per_minute
         self.clock = clock
         self.sleep = sleep
-        self.stamps: deque[float] = deque()
-
-    def _drop_old(self, now: float) -> None:
-        while self.stamps and now - self.stamps[0] >= 60.0:
-            self.stamps.popleft()
+        self.next_at: float | None = None
 
     def acquire(self) -> None:
         now = self.clock()
-        self._drop_old(now)
-        if len(self.stamps) >= self.max:
-            wait = 60.0 - (now - self.stamps[0])
-            if wait > 0:
-                self.sleep(wait)
-            self._drop_old(self.clock())
-        self.stamps.append(self.clock())
+        if self.next_at is not None and now < self.next_at:
+            self.sleep(self.next_at - now)
+            now = self.clock()
+        self.next_at = now + self.interval
 
 
 class _SessionExpired(Exception):
@@ -260,13 +257,17 @@ class McpClient:
         headers = {"Mcp-Session-Id": self._session_id} if self._session_id else {}
         last = ""
         retry_after: float | None = None
+        rate_limited = False
         for attempt in range(self.retries):
             if attempt:
                 delay = self.backoff * 2 ** (attempt - 1)
+                if rate_limited:
+                    delay = max(delay, RATE_LIMITED_BACKOFF_S * 2 ** (attempt - 1))
                 if retry_after is not None:
-                    delay = max(delay, min(retry_after, MAX_RETRY_AFTER_S))
+                    delay = max(self.backoff, min(retry_after, MAX_RETRY_AFTER_S))
                 self.sleep(delay)
                 retry_after = None
+                rate_limited = False
             self.limiter.acquire()
             try:
                 resp = self._http.post(self.settings.mcp_url, json=payload, headers=headers)
@@ -275,6 +276,7 @@ class McpClient:
                 continue
             if resp.status_code == 429 or resp.status_code >= 500:
                 last = f"HTTP {resp.status_code}"
+                rate_limited = resp.status_code == 429
                 try:
                     retry_after = float(resp.headers.get("retry-after", ""))
                 except ValueError:

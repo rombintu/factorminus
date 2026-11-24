@@ -158,9 +158,9 @@ def test_retry_on_429_then_success():
     server = FakeServer()
     server.queue.append(httpx.Response(429, text="too many"))
     server.queue.append(httpx.Response(503, text="unavailable"))
-    client, sleeps = make(server)
+    client, sleeps = make(server, max_rpm=10**9)
     assert client.call_tool("invest_get_share", {}) == {"ok": "invest_get_share"}
-    assert sleeps == [0.5, 1.0]
+    assert sleeps == [5.0, 1.0]  # после 429 пауза длиннее, после 5xx — обычная
 
 
 def test_retries_exhausted():
@@ -199,7 +199,11 @@ def test_list_tools():
 def test_record_then_replay_without_network(tmp_path):
     server = FakeServer()
     with McpClient(
-        settings(), transport=server.transport, mode="record", cassette_dir=tmp_path
+        settings(),
+        transport=server.transport,
+        mode="record",
+        cassette_dir=tmp_path,
+        sleep=lambda s: None,
     ) as client:
         client.call_tool("invest_get_share", {"instrumentId": "SYN_A"})
         client.list_tools()
@@ -240,7 +244,8 @@ def test_insecure_refused_under_pytest():
         McpClient(settings(insecure_ssl=True), transport=FakeServer().transport)
 
 
-def test_rate_limiter_waits_when_window_full():
+def test_rate_limiter_spaces_requests_evenly():
+    """180/мин — это интервал 1/3 с между запросами, без всплеска в начале окна."""
     now = [0.0]
     sleeps = []
 
@@ -248,13 +253,21 @@ def test_rate_limiter_waits_when_window_full():
         sleeps.append(s)
         now[0] += s
 
-    limiter = RateLimiter(3, clock=lambda: now[0], sleep=sleep)
-    for _ in range(3):
-        limiter.acquire()
-        now[0] += 1.0
+    limiter = RateLimiter(3, clock=lambda: now[0], sleep=sleep)  # 3/мин -> интервал 20 с
+    limiter.acquire()
     assert sleeps == []
-    limiter.acquire()  # 4-й в окне 60 с ждёт, пока выйдет первый
-    assert sleeps == [pytest.approx(57.0)]
+    now[0] += 1.0
+    limiter.acquire()
+    assert sleeps == [pytest.approx(19.0)]
+    now[0] += 60.0  # после паузы ждать не нужно
+    limiter.acquire()
+    assert sleeps == [pytest.approx(19.0)]
+    # за любые 60 с не больше 3 запросов
+    stamps = []
+    for _ in range(10):
+        limiter.acquire()
+        stamps.append(now[0])
+    assert all(b - a >= 20.0 - 1e-9 for a, b in zip(stamps, stamps[1:], strict=False))
 
 
 def test_transport_error_message_scrubbed():
@@ -299,6 +312,6 @@ def test_retry_after_respected_and_capped():
     server = FakeServer()
     server.queue.append(httpx.Response(429, headers={"Retry-After": "3"}))
     server.queue.append(httpx.Response(429, headers={"Retry-After": "9999"}))
-    client, sleeps = make(server)
+    client, sleeps = make(server, max_rpm=10**9)
     client.call_tool("invest_get_share", {})
     assert sleeps == [3.0, 30.0]
