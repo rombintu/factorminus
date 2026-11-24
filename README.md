@@ -1,14 +1,27 @@
 # Фактор-минус
 
+[![ci](https://github.com/rombintu/factorminus/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rombintu/factorminus/actions/workflows/ci.yml)
+
 Сервис показывает инвестору в момент покупки, как бумага ляжет в портфель: ловит фонды-близнецы, скрытую концентрацию и перекос в один фактор. Сделку он не блокирует и ничего не советует. Подробности: `docs/CONTEXT.md`.
 
 Сейчас готов этап 1: данные и фундамент. Есть read-only клиент T-Invest MCP, загрузка бумаг и свечей в SQLite, веса IMOEX, синтетический набор для тестов и контракт вердикта.
 
+## Быстрый старт в Docker
+
+```bash
+docker compose run --rm demo              # синтетика: без токена и без сети
+docker compose run --rm nightly           # реальные данные: токен из .env
+docker compose run --rm fm db stats       # любая команда CLI
+```
+
+Подробно — запуск на ноутбуке или VPS, cron, обновление, бэкап: [`docs/DEPLOY.md`](docs/DEPLOY.md). Проверки, сводка прогона и выпуск релиза: [`docs/CI.md`](docs/CI.md). Журнал этапов: [`docs/STAGES.md`](docs/STAGES.md).
+
 ## Установка
 
 ```bash
-python3.12 -m venv .venv && .venv/bin/pip install -e '.[dev]'   # или: make install
-.venv/bin/pip install -e '.[ml]'                                # laya, нужна с этапа 2
+make install                                  # .venv из requirements/dev.txt (lock-файл) + пакет
+.venv/bin/pip install -r requirements/ml.txt  # laya и torch CPU, нужны с этапа 2
+.venv/bin/pre-commit install                  # ruff, гигиена и gitleaks перед каждым коммитом
 ```
 
 ## Токен и TLS
@@ -21,16 +34,16 @@ TINVEST_TOKEN=t.ваш_токен
 
 Файл `.env` в `.gitignore`. Образец лежит в `.env.example`. Переменная окружения важнее `.env`. CLI токен не печатает.
 
-Сертификаты `invest-public-api.tbank.ru` и `iss.moex.com` выпущены российским УЦ (Russian Trusted Root CA). Если появляется ошибка `CERTIFICATE_VERIFY_FAILED`, соберите бандл из сертификатов certifi и Минцифры и укажите путь к нему:
+Сертификаты `invest-public-api.tbank.ru` и `iss.moex.com` выпущены российским УЦ (Russian Trusted Root CA). Публичные сертификаты Минцифры лежат в `certs/`: SHA-256 корневого сверен с Госуслугами, промежуточные подписаны им; отпечатки всех трёх зашиты в `scripts/build_ca_bundle.py`. Если появляется ошибка `CERTIFICATE_VERIFY_FAILED`, соберите бандл (certifi + `certs/`) и укажите путь к нему:
 
 ```bash
-mkdir -p data/ca
-cat "$(.venv/bin/python -c 'import certifi; print(certifi.where())')" \
-    russian_trusted_root_ca.pem russian_trusted_sub_ca.pem > data/ca/ru-bundle.pem
+make ca-bundle                                   # пишет data/ca/ru-bundle.pem, подмена сертификата — ошибка
 echo 'TINVEST_CA_BUNDLE=data/ca/ru-bundle.pem' >> .env
 ```
 
-Сертификаты Минцифры можно скачать на Госуслугах. `TINVEST_INSECURE_SSL=1` отключает проверку сертификата. Он нужен только для локальной отладки и запрещён в тестах.
+В Docker-образе бандл собирается при сборке и подключён по умолчанию.
+
+`TINVEST_INSECURE_SSL=1` отключает проверку сертификата. Он нужен только для локальной отладки и запрещён в тестах.
 
 ## Команды
 
@@ -44,7 +57,7 @@ echo 'TINVEST_CA_BUNDLE=data/ca/ru-bundle.pem' >> .env
 | `fm synth generate --seed 42`, `fm synth load` | синтетический набор и его загрузка без сети |
 | `fm contract export` | JSON Schema контракта в `docs/contract/` |
 
-Проверки: `make lint`, `make test` (без сети), `make test-live` (живой MCP, нужен токен).
+Проверки: `make ci` (то же, что CI, кроме Docker), `make lint`, `make test` (без сети), `make test-live` (живой MCP, нужен токен).
 
 ## Безопасность
 
