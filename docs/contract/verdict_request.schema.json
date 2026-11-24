@@ -1,0 +1,90 @@
+{
+  "$defs": {
+    "Operation": {
+      "enum": [
+        "buy",
+        "sell"
+      ],
+      "title": "Operation",
+      "type": "string"
+    },
+    "Portfolio": {
+      "additionalProperties": false,
+      "properties": {
+        "cash_rub": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Cash Rub",
+          "type": "number"
+        },
+        "positions": {
+          "items": {
+            "$ref": "#/$defs/Position"
+          },
+          "title": "Positions",
+          "type": "array"
+        }
+      },
+      "title": "Portfolio",
+      "type": "object"
+    },
+    "Position": {
+      "additionalProperties": false,
+      "properties": {
+        "instrument_id": {
+          "examples": [
+            "TMOS_TQBR",
+            "SYN_IDXA"
+          ],
+          "pattern": "^([A-Z0-9]+_[A-Z0-9]+|SYN_[A-Z0-9_]+)$",
+          "title": "Instrument Id",
+          "type": "string"
+        },
+        "value_rub": {
+          "minimum": 0,
+          "title": "Value Rub",
+          "type": "number"
+        }
+      },
+      "required": [
+        "instrument_id",
+        "value_rub"
+      ],
+      "title": "Position",
+      "type": "object"
+    }
+  },
+  "$id": "factorminus/verdict_request.schema.json",
+  "additionalProperties": false,
+  "description": "Фактор-минус, контракт вердикта v1.0",
+  "properties": {
+    "amount_rub": {
+      "exclusiveMinimum": 0,
+      "title": "Amount Rub",
+      "type": "number"
+    },
+    "instrument_id": {
+      "examples": [
+        "TMOS_TQBR",
+        "SYN_IDXA"
+      ],
+      "pattern": "^([A-Z0-9]+_[A-Z0-9]+|SYN_[A-Z0-9_]+)$",
+      "title": "Instrument Id",
+      "type": "string"
+    },
+    "operation": {
+      "$ref": "#/$defs/Operation"
+    },
+    "portfolio": {
+      "$ref": "#/$defs/Portfolio"
+    }
+  },
+  "required": [
+    "portfolio",
+    "operation",
+    "instrument_id",
+    "amount_rub"
+  ],
+  "title": "VerdictRequest",
+  "type": "object"
+}

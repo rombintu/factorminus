@@ -1,0 +1,274 @@
+{
+  "$defs": {
+    "DataAsOf": {
+      "additionalProperties": false,
+      "properties": {
+        "candles": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Candles"
+        },
+        "index_weights": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Index Weights"
+        }
+      },
+      "title": "DataAsOf",
+      "type": "object"
+    },
+    "Flag": {
+      "enum": [
+        "preliminary",
+        "portfolio_not_considered",
+        "description_based",
+        "index_weights_stale",
+        "composition_unknown",
+        "low_confidence"
+      ],
+      "title": "Flag",
+      "type": "string"
+    },
+    "Overlap": {
+      "additionalProperties": false,
+      "properties": {
+        "correlation": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": -1,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Correlation"
+        },
+        "duplicate_score": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duplicate Score"
+        },
+        "instrument_id": {
+          "examples": [
+            "TMOS_TQBR",
+            "SYN_IDXA"
+          ],
+          "pattern": "^([A-Z0-9]+_[A-Z0-9]+|SYN_[A-Z0-9_]+)$",
+          "title": "Instrument Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/OverlapKind"
+        }
+      },
+      "required": [
+        "instrument_id",
+        "kind"
+      ],
+      "title": "Overlap",
+      "type": "object"
+    },
+    "OverlapKind": {
+      "enum": [
+        "same_index",
+        "same_issuer",
+        "lookthrough",
+        "high_correlation",
+        "similar_description"
+      ],
+      "title": "OverlapKind",
+      "type": "string"
+    },
+    "Severity": {
+      "enum": [
+        "warning",
+        "info",
+        "positive",
+        "none"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "Trace": {
+      "additionalProperties": false,
+      "properties": {
+        "echelon": {
+          "enum": [
+            "rules",
+            "laya",
+            "none"
+          ],
+          "title": "Echelon",
+          "type": "string"
+        },
+        "latency_ms": {
+          "minimum": 0,
+          "title": "Latency Ms",
+          "type": "number"
+        },
+        "laya_used": {
+          "default": false,
+          "title": "Laya Used",
+          "type": "boolean"
+        },
+        "rules_fired": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rules Fired",
+          "type": "array"
+        }
+      },
+      "required": [
+        "echelon",
+        "latency_ms"
+      ],
+      "title": "Trace",
+      "type": "object"
+    },
+    "Verdict": {
+      "enum": [
+        "duplicate",
+        "increases_concentration",
+        "increases_skew",
+        "adds_factor",
+        "reduces_skew",
+        "neutral",
+        "no_data",
+        "unavailable"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "$id": "factorminus/verdict_response.schema.json",
+  "additionalProperties": false,
+  "description": "Фактор-минус, контракт вердикта v1.0",
+  "properties": {
+    "contract_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "correlation_to_portfolio": {
+      "anyOf": [
+        {
+          "maximum": 1,
+          "minimum": -1,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Correlation To Portfolio"
+    },
+    "data_as_of": {
+      "$ref": "#/$defs/DataAsOf"
+    },
+    "factors_after": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "Доли факторов, %",
+      "title": "Factors After",
+      "type": "object"
+    },
+    "factors_before": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "Доли факторов, %",
+      "title": "Factors Before",
+      "type": "object"
+    },
+    "facts": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Facts",
+      "type": "array"
+    },
+    "flags": {
+      "items": {
+        "$ref": "#/$defs/Flag"
+      },
+      "title": "Flags",
+      "type": "array"
+    },
+    "headline": {
+      "title": "Headline",
+      "type": "string"
+    },
+    "issuers_after": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "Сквозные доли эмитентов, %",
+      "title": "Issuers After",
+      "type": "object"
+    },
+    "issuers_before": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "Сквозные доли эмитентов, %",
+      "title": "Issuers Before",
+      "type": "object"
+    },
+    "overlaps": {
+      "items": {
+        "$ref": "#/$defs/Overlap"
+      },
+      "title": "Overlaps",
+      "type": "array"
+    },
+    "severity": {
+      "$ref": "#/$defs/Severity"
+    },
+    "trace": {
+      "$ref": "#/$defs/Trace"
+    },
+    "verdict": {
+      "$ref": "#/$defs/Verdict"
+    }
+  },
+  "required": [
+    "verdict",
+    "severity",
+    "headline",
+    "trace"
+  ],
+  "title": "VerdictResponse",
+  "type": "object"
+}

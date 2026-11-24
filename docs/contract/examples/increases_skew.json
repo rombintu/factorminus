@@ -1,0 +1,51 @@
+{
+  "contract_version": "1.0",
+  "verdict": "increases_skew",
+  "severity": "warning",
+  "headline": "После покупки 46% портфеля зависит от нефти",
+  "facts": [
+    "Доля фактора «нефть»: 31% → 46%",
+    "Корреляция SYN_OIL3 с нефтяными бумагами портфеля: 0,72"
+  ],
+  "overlaps": [
+    {
+      "instrument_id": "SYN_OIL1",
+      "kind": "high_correlation",
+      "correlation": 0.72
+    }
+  ],
+  "factors_before": {
+    "oil": 31.0,
+    "banks": 24.0,
+    "metals": 15.0,
+    "bonds": 20.0,
+    "cash": 10.0
+  },
+  "factors_after": {
+    "oil": 46.0,
+    "banks": 19.0,
+    "metals": 12.0,
+    "bonds": 16.0,
+    "cash": 7.0
+  },
+  "issuers_before": {
+    "Синтнефть": 18.0
+  },
+  "issuers_after": {
+    "Синтнефть": 14.5
+  },
+  "correlation_to_portfolio": 0.64,
+  "flags": [],
+  "data_as_of": {
+    "candles": "2025-12-01",
+    "index_weights": "2025-12-01"
+  },
+  "trace": {
+    "echelon": "rules",
+    "rules_fired": [
+      "factor_threshold"
+    ],
+    "laya_used": false,
+    "latency_ms": 14
+  }
+}

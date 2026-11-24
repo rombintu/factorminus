@@ -1,0 +1,26 @@
+{
+  "contract_version": "1.0",
+  "verdict": "unavailable",
+  "severity": "none",
+  "headline": "Данные временно недоступны: структура портфеля не пересчитана",
+  "facts": [],
+  "overlaps": [],
+  "factors_before": {},
+  "factors_after": {},
+  "issuers_before": {},
+  "issuers_after": {},
+  "correlation_to_portfolio": null,
+  "flags": [
+    "portfolio_not_considered"
+  ],
+  "data_as_of": {
+    "candles": null,
+    "index_weights": null
+  },
+  "trace": {
+    "echelon": "none",
+    "rules_fired": [],
+    "laya_used": false,
+    "latency_ms": 3
+  }
+}

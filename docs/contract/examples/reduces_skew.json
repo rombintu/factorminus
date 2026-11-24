@@ -1,0 +1,38 @@
+{
+  "contract_version": "1.0",
+  "verdict": "reduces_skew",
+  "severity": "positive",
+  "headline": "Покупка снижает долю нефти в портфеле с 52% до 41%",
+  "facts": [
+    "Корреляция SYN_GOLD с портфелем за 12 мес: 0,03",
+    "Доля фактора «золото»: 0% → 18%"
+  ],
+  "overlaps": [],
+  "factors_before": {
+    "oil": 52.0,
+    "banks": 28.0,
+    "cash": 20.0
+  },
+  "factors_after": {
+    "oil": 41.0,
+    "banks": 22.0,
+    "gold": 18.0,
+    "cash": 19.0
+  },
+  "issuers_before": {},
+  "issuers_after": {},
+  "correlation_to_portfolio": 0.03,
+  "flags": [],
+  "data_as_of": {
+    "candles": "2025-12-01",
+    "index_weights": null
+  },
+  "trace": {
+    "echelon": "rules",
+    "rules_fired": [
+      "factor_threshold"
+    ],
+    "laya_used": false,
+    "latency_ms": 11
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "contract_version": "1.0",
+  "verdict": "neutral",
+  "severity": "none",
+  "headline": "Значимого пересечения с портфелем не обнаружено",
+  "facts": [
+    "Корреляция SYN_RETAIL1 с портфелем за 12 мес: 0,41"
+  ],
+  "overlaps": [],
+  "factors_before": {
+    "broad_market": 60.0,
+    "bonds": 30.0,
+    "cash": 10.0
+  },
+  "factors_after": {
+    "broad_market": 57.0,
+    "consumer": 5.0,
+    "bonds": 28.5,
+    "cash": 9.5
+  },
+  "issuers_before": {},
+  "issuers_after": {
+    "СинтМаркет": 5.0
+  },
+  "correlation_to_portfolio": 0.41,
+  "flags": [
+    "low_confidence"
+  ],
+  "data_as_of": {
+    "candles": "2025-12-01",
+    "index_weights": "2025-12-01"
+  },
+  "trace": {
+    "echelon": "laya",
+    "rules_fired": [],
+    "laya_used": true,
+    "latency_ms": 38
+  }
+}

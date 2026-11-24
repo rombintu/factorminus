@@ -1,0 +1,46 @@
+{
+  "contract_version": "1.0",
+  "verdict": "duplicate",
+  "severity": "warning",
+  "headline": "SYN_IDXB повторяет тот же индекс SYNIDX, что ваш SYN_IDXA",
+  "facts": [
+    "Корреляция дневных доходностей за 12 мес: 0,98",
+    "После покупки 93% портфеля — один индекс SYNIDX"
+  ],
+  "overlaps": [
+    {
+      "instrument_id": "SYN_IDXA",
+      "kind": "same_index",
+      "correlation": 0.98,
+      "duplicate_score": 0.97
+    }
+  ],
+  "factors_before": {
+    "broad_market": 90.0,
+    "cash": 10.0
+  },
+  "factors_after": {
+    "broad_market": 93.3,
+    "cash": 6.7
+  },
+  "issuers_before": {
+    "Синтбанк": 15.3
+  },
+  "issuers_after": {
+    "Синтбанк": 15.9
+  },
+  "correlation_to_portfolio": 0.98,
+  "flags": [],
+  "data_as_of": {
+    "candles": "2025-12-01",
+    "index_weights": "2025-12-01"
+  },
+  "trace": {
+    "echelon": "rules",
+    "rules_fired": [
+      "same_index"
+    ],
+    "laya_used": false,
+    "latency_ms": 9
+  }
+}

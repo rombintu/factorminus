@@ -310,6 +310,21 @@ def synth_load(
         raise typer.Exit(1)
 
 
+# --- contract ---
+
+
+@contract_app.command("export")
+@friendly_errors
+def contract_export(
+    out: Annotated[Path, typer.Option()] = REPO_ROOT / "docs" / "contract",
+) -> None:
+    """Экспорт JSON Schema контракта вердикта."""
+    from factorminus.contracts import export_schemas
+
+    for p in export_schemas(out):
+        typer.echo(f"записан {p}")
+
+
 def run() -> None:  # pragma: no cover
     try:
         app()
