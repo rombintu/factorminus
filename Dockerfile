@@ -6,10 +6,9 @@
 #   test-ml     — runtime-ml + dev-зависимости + ML-тесты: make docker-test-ml.
 # Токена и .env в образе нет: они передаются только при запуске (compose env_file).
 
-ARG PYTHON_IMAGE=python:3.12-slim@sha256:191083cdf6c7bda8c76158983163ead5d5cf7b77cf3033e805bb0f5296f51b4b
-
 # --- общая база: системный Python, без кэшей ---
-FROM ${PYTHON_IMAGE} AS base
+# Образ в FROM записан литерально (не через ARG): иначе Dependabot его не обновит.
+FROM python:3.12-slim@sha256:191083cdf6c7bda8c76158983163ead5d5cf7b77cf3033e805bb0f5296f51b4b AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \

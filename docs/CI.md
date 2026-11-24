@@ -9,6 +9,7 @@
 | `ci.yml` | PR в `main`, push в `main`, вручную; вызывается из `release.yml` | проверки ниже + сводка прогона |
 | `ml.yml` | вручную, по понедельникам, PR с изменениями `analysis/labeler*`, `requirements/ml.txt`, `Dockerfile` | сборка `runtime-ml` и ML smoke без сети: ленивый `Router()` и `preload=True` (`--ml-heavy`), пиковая память в сводке; merge не блокирует |
 | `release.yml` | push в `main`, теги `v*` | CI → публикация образов в GHCR → GitHub Release (на тег) |
+| `audit.yml` | вручную, по понедельникам | `make audit` по закреплённым версиям: новые уязвимости видны без PR |
 | `_image.yml` | только из `release.yml` | сборка образа на нативных раннерах amd64/arm64, multi-arch манифест, SBOM, provenance |
 
 ### Задачи `ci.yml`
@@ -21,7 +22,7 @@
 | `lockfiles` | `make lock-check`: перекомпиляция lock-файлов не даёт diff; общие пакеты закреплены одинаково в каждой паре `base.txt`, `dev.txt`, `ml.txt` (runtime собран из `base.txt`, тесты идут на `dev.txt`) | да |
 | `contract` | `make contract-check`: схемы в `docs/contract/` совпадают с кодом, набор файлов тот же | да |
 | `docker` | сборка `runtime` и `test`, `make docker-test-run`, `make docker-demo` (smoke на синтетике без `.env`), `make docker-check` | да |
-| `audit` | `make audit` (pip-audit по `requirements/base.txt`) | нет: `continue-on-error`, исключения с причиной в `.github/pip-audit-ignore.txt` |
+| `audit` | `make audit` (pip-audit по `requirements/base.txt`, `dev.txt`, `ml.txt`) | нет: `continue-on-error`, исключения с причиной в `.github/pip-audit-ignore.txt` |
 | `summary` | `make ci-summary` | нет |
 
 Порог покрытия `COV_MIN` в `Makefile`: замер этапа 1.5 (91,4%) минус 2 п.п. = 89. Порог только растёт.
@@ -115,10 +116,20 @@ EOF
 
 Проверка: `gh api repos/rombintu/factorminus/rulesets`.
 
+## Обновление зависимостей
+
+Lock-файлы `requirements/{base,dev,ml,build}.txt` собирает `uv pip compile` (universal, с хэшами; в `ml.txt` ещё индекс torch CPU). Dependabot для `pip` отключён: он правил бы каждый файл отдельно, и файлы разошлись бы с `uv pip compile` (красный `lockfiles`) или между собой.
+
+1. `git switch -c deps-YYYY-MM-DD` от `main`.
+2. `make lock-upgrade`: все четыре файла пересобираются с `--upgrade` в пределах ограничений `pyproject.toml`, в конце сверяются версии в парах `base`/`dev`/`ml`.
+3. `make ci`, затем PR. Если поменялся numpy, тест детерминизма синтетики может потребовать перегенерации фикстур (`make synth`).
+
+Уязвимости в уже закреплённых версиях видны без PR: `audit.yml` раз в неделю запускает `make audit`. Исключение — строка `ID # причина` в `.github/pip-audit-ignore.txt`.
+
 ## Безопасность workflow
 
 - Только `pull_request`, нигде нет `pull_request_target`: PR из чужих форков не получают секретов и прав записи.
-- Все сторонние actions закреплены по полному SHA коммита с комментарием версии; базовый образ, frontend `docker/dockerfile`, образ buildkit (`driver-opts` у `setup-buildx-action`) и контейнеры инструментов (actionlint, hadolint, gitleaks) — по digest. Dependabot обновляет actions и базовый образ; digest buildkit и инструментов обновляются вручную.
+- Все сторонние actions закреплены по полному SHA коммита с комментарием версии; базовый образ, frontend `docker/dockerfile`, образ buildkit (`driver-opts` у `setup-buildx-action`) и контейнеры инструментов (actionlint, hadolint, gitleaks) — по digest. Dependabot обновляет actions и базовый образ (он записан в `FROM` литерально: значение `ARG` Dependabot не обновляет); frontend, digest buildkit и инструментов обновляются вручную. Python-зависимости Dependabot не трогает — см. «Обновление зависимостей».
 - Зависимости ставятся только из lock-файлов с хэшами (`--require-hashes`, в образе ещё `--only-binary=:all:`). setuptools для сборки пакета тоже закреплён (`requirements/build.txt`), сборка идёт без build isolation.
 - `permissions` на уровне workflow — `contents: read`; `packages: write` только у job-ов публикации в `_image.yml`, `contents: write` только у job создания Release.
 - `actions/checkout` с `persist-credentials: false`: токен не остаётся в `.git/config`.
@@ -143,4 +154,5 @@ pre-commit install    # ruff, гигиена и gitleaks перед каждым
 make ci               # lint, hygiene, lock-check, contract-check, test-cov
 make docker-build docker-test docker-demo docker-check
 make lock             # перегенерировать lock-файлы после правки pyproject.toml
+make lock-upgrade     # поднять все закреплённые версии (см. «Обновление зависимостей»)
 ```

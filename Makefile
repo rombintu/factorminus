@@ -21,7 +21,7 @@ DOCKER_BUILD = docker buildx build --load $(DOCKER_BUILD_ARGS)
 SHELL := /bin/bash
 
 .PHONY: install install-deps lint lint-docker test test-cov test-live test-ml hygiene gitleaks \
-	audit lock lock-check contract-check ci ci-summary release-notes release-guard ca-bundle \
+	audit lock lock-upgrade lock-check contract-check ci ci-summary release-notes release-guard ca-bundle \
 	ingest synth \
 	docker-build docker-build-ml docker-build-test docker-test docker-test-run docker-test-ml \
 	docker-build-test-ml docker-test-ml-run \
@@ -88,6 +88,17 @@ lock:
 	$(UV_COMPILE) --extra ml -o requirements/ml.txt
 	$(ML_INDEX) requirements/ml.txt
 	$(BUILD_COMPILE) -o requirements/build.txt
+
+# Обновить все закреплённые версии до последних, допустимых pyproject.toml (вместо Dependabot
+# для pip): все четыре файла сразу, поэтому они остаются согласованными. Дальше — PR.
+lock-upgrade:
+	@mkdir -p requirements
+	$(UV_COMPILE) --upgrade -o requirements/base.txt
+	$(UV_COMPILE) --upgrade --extra dev -o requirements/dev.txt
+	$(UV_COMPILE) --upgrade --extra ml -o requirements/ml.txt
+	$(ML_INDEX) requirements/ml.txt
+	$(BUILD_COMPILE) --upgrade -o requirements/build.txt
+	$(PY) scripts/check_locks.py requirements/base.txt requirements/dev.txt requirements/ml.txt
 
 # Перекомпиляция поверх копий: uv сохраняет текущие версии, diff появляется, только
 # если pyproject.toml и lock-файлы разошлись.
