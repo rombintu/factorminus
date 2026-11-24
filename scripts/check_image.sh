@@ -14,9 +14,22 @@ bad() { report="$report
 - ❌ $1"; echo "FAIL: $1" >&2; fail=1; }
 
 # 1. Нет .env и баз данных
-found=$(docker run --rm --network none --entrypoint /bin/sh "$image" -c \
-  'ls -a /app/.env 2>/dev/null; find / -xdev \( -name "*.sqlite" -o -name "*.sqlite-*" -o -name ".env" \) -not -path "/proc/*" 2>/dev/null' || true)
-if [ -z "$found" ]; then ok "нет .env и *.sqlite"; else bad "в образе есть: $found"; fi
+# find печатает найденное; код возврата контейнера проверяется отдельно (иначе сбой запуска
+# выглядел бы как «ничего не найдено»)
+if found=$(docker run --rm --network none --entrypoint /bin/sh "$image" -c \
+  'find / -xdev \( -name "*.sqlite" -o -name "*.sqlite-*" -o -name "*.sqlite3" -o -name ".env" -o -name ".env.*" \) -not -name ".env.example" 2>/dev/null; exit 0'); then
+  if [ -z "$found" ]; then ok "нет .env и *.sqlite"; else bad "в образе есть: $found"; fi
+else
+  bad "не удалось запустить проверку файлов в образе"
+fi
+
+# 1b. Нет строк, похожих на токен T-Invest, в файлах приложения и данных
+if tok=$(docker run --rm --network none --entrypoint /bin/sh "$image" -c \
+  'grep -rIlE "t\.[A-Za-z0-9_-]{80,}" /app /opt/factorminus /var/lib/factorminus 2>/dev/null; exit 0'); then
+  if [ -z "$tok" ]; then ok "нет строк, похожих на токен, в /app и /opt/factorminus"; else bad "похоже на токен: $tok"; fi
+else
+  bad "не удалось запустить поиск токена в образе"
+fi
 
 # 2. Не root: и в конфигурации образа, и у реального процесса
 cfg_user=$(docker image inspect -f '{{.Config.User}}' "$image")
@@ -28,8 +41,11 @@ else
 fi
 
 # 3. Токена нет в истории слоёв и в ENV образа
-if docker history --no-trunc --format '{{.CreatedBy}}' "$image" | grep -Eq 'TINVEST_TOKEN=[^[:space:]"]'; then
+history=$(docker history --no-trunc --format '{{.CreatedBy}}' "$image")
+if echo "$history" | grep -Eq 'TINVEST_TOKEN=("|'"'"')?[^[:space:]"'"'"']'; then
   bad "docker history содержит TINVEST_TOKEN=<значение>"
+elif echo "$history" | grep -Eq 't\.[A-Za-z0-9_-]{80,}'; then
+  bad "docker history содержит строку, похожую на токен"
 elif docker image inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$image" | grep -q '^TINVEST_TOKEN='; then
   bad "ENV образа содержит TINVEST_TOKEN"
 else

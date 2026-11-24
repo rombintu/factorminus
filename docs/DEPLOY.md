@@ -15,7 +15,7 @@ cp .env.example .env      # затем впишите TINVEST_TOKEN (токен 
 chmod 600 .env
 ```
 
-`.env` нужен только для реальных данных (`nightly`, `fm`). Демо работает без него. В образ `.env` не попадает: compose передаёт переменные только при запуске (`env_file`). Пути (`FM_DATA_DIR`, `FM_DB_PATH`, `TINVEST_CA_BUNDLE`) в контейнере задаёт `compose.yaml`, значения из `.env` их не переопределяют.
+`.env` нужен только для реальных данных (`nightly`, `fm`). Демо работает без него. В образ `.env` не попадает: compose передаёт переменные только при запуске (`env_file`). Пути (`FM_HOME`, `FM_DATA_DIR`, `FM_DB_PATH`, `TINVEST_CA_BUNDLE`) и `TINVEST_INSECURE_SSL=0` в контейнере задаёт `compose.yaml`, значения из `.env` их не переопределяют.
 
 ## 3. Демо на синтетике
 
@@ -26,7 +26,7 @@ docker compose run --rm demo
 
 Или собрать локально: `docker compose build && docker compose run --rm demo` (`make docker-build docker-demo` делает то же для образа `factorminus:local`).
 
-Демо загружает синтетический набор (без сети и токена) в том `fm-data` и печатает `fm db stats`.
+Демо загружает синтетический набор в том `fm-data` и печатает `fm db stats`. Контейнер демо запускается без сети (`network_mode: none`) и без `.env`.
 
 ## 4. Реальные данные
 

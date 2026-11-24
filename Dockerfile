@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 # Один Dockerfile для CI и запуска. Цели:
 #   runtime     — CLI, nightly, демо, позже API (по умолчанию);
 #   runtime-ml  — runtime + laya (torch CPU) + веса laya, скачанные при сборке;
@@ -22,26 +22,30 @@ FROM base AS venv-base
 COPY requirements/base.txt /tmp/requirements/base.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m venv /opt/venv \
-    && pip install --require-hashes -r /tmp/requirements/base.txt
+    && pip install --require-hashes --only-binary=:all: -r /tmp/requirements/base.txt
 
 FROM base AS venv-ml
 COPY requirements/ml.txt /tmp/requirements/ml.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m venv /opt/venv \
-    && pip install --require-hashes -r /tmp/requirements/ml.txt
+    && pip install --require-hashes --only-binary=:all: -r /tmp/requirements/ml.txt
 
 FROM base AS venv-dev
 COPY requirements/dev.txt /tmp/requirements/dev.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m venv /opt/venv \
-    && pip install --require-hashes -r /tmp/requirements/dev.txt
+    && pip install --require-hashes --only-binary=:all: -r /tmp/requirements/dev.txt
 
 # --- пакет factorminus: колесо собирается отдельно, в образ ставится без исходников ---
+# setuptools закреплён с хэшем (requirements/build.txt), сборка без build isolation:
+# незакреплённый пакет с PyPI при сборке колеса не исполняется.
 FROM venv-base AS wheel
+COPY requirements/build.txt /tmp/requirements/build.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --require-hashes --only-binary=:all: -r /tmp/requirements/build.txt
 COPY pyproject.toml README.md LICENSE /src/
 COPY src /src/src
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip wheel --no-deps --wheel-dir /wheels /src
+RUN pip wheel --no-deps --no-build-isolation --wheel-dir /wheels /src
 
 # --- CA-бандл: certifi + certs/*.pem со сверкой отпечатков (ошибка при подмене) ---
 FROM venv-base AS ca
@@ -81,7 +85,8 @@ LABEL org.opencontainers.image.title="factorminus" \
 ENV PIP_NO_CACHE_DIR=1 \
     FM_HOME=/app \
     FM_DATA_DIR=/var/lib/factorminus \
-    TINVEST_CA_BUNDLE=/opt/factorminus/ca/ru-bundle.pem
+    TINVEST_CA_BUNDLE=/opt/factorminus/ca/ru-bundle.pem \
+    XDG_CACHE_HOME=/tmp/.cache
 RUN groupadd --system --gid 10001 fm \
     && useradd --system --uid 10001 --gid fm --no-create-home --home-dir /nonexistent \
        --shell /usr/sbin/nologin fm \
@@ -110,6 +115,7 @@ ENV PIP_NO_CACHE_DIR=1 \
     FM_HOME=/app \
     FM_DATA_DIR=/var/lib/factorminus \
     TINVEST_CA_BUNDLE=/opt/factorminus/ca/ru-bundle.pem \
+    XDG_CACHE_HOME=/tmp/.cache \
     HF_HOME=/opt/hf \
     HF_HUB_OFFLINE=1 \
     TRANSFORMERS_OFFLINE=1 \
@@ -147,7 +153,7 @@ FROM runtime-ml AS test-ml
 USER 0
 # версии общих пакетов в dev.txt и ml.txt совпадают (один pyproject, uv universal)
 COPY requirements/dev.txt /tmp/requirements/dev.txt
-RUN pip install --require-hashes -r /tmp/requirements/dev.txt
+RUN pip install --require-hashes --only-binary=:all: -r /tmp/requirements/dev.txt
 COPY pyproject.toml /app/pyproject.toml
 COPY tests/conftest.py tests/test_ml_smoke.py /app/tests/
 USER 10001:10001

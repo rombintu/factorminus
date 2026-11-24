@@ -13,23 +13,29 @@ UV_COMPILE = $(PY) -m uv pip compile pyproject.toml --python-version 3.12 --univ
 # uv не пишет в lock-файл явный индекс torch CPU: добавляем строку, чтобы `pip install -r`
 # находил torch==X+cpu. Хэши защищают от подмены пакета с дополнительного индекса.
 ML_INDEX = $(PY) scripts/lock_extra_index.py
+# build-system.requires (setuptools) — свой lock с хэшами: сборка пакета без build isolation
+BUILD_COMPILE = $(PY) scripts/check_locks.py --build-requires | $(PY) -m uv pip compile - \
+	--python-version 3.12 --universal --quiet --no-header --emit-index-url --generate-hashes
 DOCKER_BUILD = docker buildx build --load $(DOCKER_BUILD_ARGS)
+# bash: process substitution в contract-check, [[ ]] в release-guard
+SHELL := /bin/bash
 
 .PHONY: install install-deps lint lint-docker test test-cov test-live test-ml hygiene gitleaks \
-	audit lock lock-check contract-check ci ci-summary release-notes ca-bundle ingest synth \
+	audit lock lock-check contract-check ci ci-summary release-notes release-guard ca-bundle \
+	ingest synth \
 	docker-build docker-build-ml docker-build-test docker-test docker-test-run docker-test-ml \
 	docker-build-test-ml docker-test-ml-run \
 	docker-demo docker-check clean-ci
 
 install:
 	test -x .venv/bin/python || python3.12 -m venv .venv
-	.venv/bin/python -m pip install -q -r requirements/dev.txt
-	.venv/bin/python -m pip install -q --no-deps -e .
+	.venv/bin/python -m pip install -q --require-hashes -r requirements/dev.txt -r requirements/build.txt
+	.venv/bin/python -m pip install -q --no-deps --no-build-isolation -e .
 
-# CI и контейнер: системный Python без .venv, версии строго из lock-файла
+# CI и контейнер: системный Python без .venv, версии строго из lock-файлов
 install-deps:
-	$(PY) -m pip install -q --require-hashes -r requirements/dev.txt
-	$(PY) -m pip install -q --no-deps -e .
+	$(PY) -m pip install -q --require-hashes -r requirements/dev.txt -r requirements/build.txt
+	$(PY) -m pip install -q --no-deps --no-build-isolation -e .
 
 lint:
 	$(PY) -m ruff check src tests scripts
@@ -72,6 +78,8 @@ gitleaks:
 AUDIT_IGNORES = $(foreach id,$(shell sed -e 's/\#.*//' .github/pip-audit-ignore.txt 2>/dev/null),--ignore-vuln $(id))
 audit:
 	$(PY) -m pip_audit --disable-pip -r requirements/base.txt $(AUDIT_IGNORES)
+	$(PY) -m pip_audit --disable-pip -r requirements/dev.txt $(AUDIT_IGNORES)
+	$(PY) -m pip_audit --disable-pip -r requirements/ml.txt $(AUDIT_IGNORES)
 
 lock:
 	@mkdir -p requirements
@@ -79,6 +87,7 @@ lock:
 	$(UV_COMPILE) --extra dev -o requirements/dev.txt
 	$(UV_COMPILE) --extra ml -o requirements/ml.txt
 	$(ML_INDEX) requirements/ml.txt
+	$(BUILD_COMPILE) -o requirements/build.txt
 
 # Перекомпиляция поверх копий: uv сохраняет текущие версии, diff появляется, только
 # если pyproject.toml и lock-файлы разошлись.
@@ -88,12 +97,16 @@ lock-check:
 	$(UV_COMPILE) --extra dev -o $(BUILD)/lock/dev.txt
 	$(UV_COMPILE) --extra ml -o $(BUILD)/lock/ml.txt
 	$(ML_INDEX) $(BUILD)/lock/ml.txt
+	$(BUILD_COMPILE) -o $(BUILD)/lock/build.txt
 	diff -u requirements $(BUILD)/lock && echo "lock-файлы соответствуют pyproject.toml"
+	$(PY) scripts/check_locks.py requirements/dev.txt requirements/ml.txt
 
 contract-check:
 	@rm -rf $(BUILD)/contract
 	$(FM) contract export --out $(BUILD)/contract > /dev/null
 	@for f in $(BUILD)/contract/*.json; do diff -u docs/contract/$$(basename $$f) $$f || exit 1; done
+	@diff -u <(cd docs/contract && ls *.schema.json) <(cd $(BUILD)/contract && ls *.schema.json) \
+		|| (echo "набор схем в docs/contract и в коде разный"; exit 1)
 	@echo "схема в docs/contract совпадает с кодом"
 
 # То же, что CI, кроме docker и gitleaks: быстрая проверка перед пушем.
@@ -102,10 +115,18 @@ ci: lint hygiene lock-check contract-check test-cov
 ci-summary:
 	$(PY) scripts/ci_summary.py --build $(BUILD)
 
-# Текст GitHub Release: make release-notes RELEASE_TAG=v0.1.5
+# Текст GitHub Release: RELEASE_TAG=v0.1.5 make release-notes (тег только из окружения)
 release-notes:
 	@mkdir -p $(BUILD)
-	$(PY) scripts/release_notes.py --tag $(RELEASE_TAG) > $(BUILD)/release.md
+	$(PY) scripts/release_notes.py --tag "$$RELEASE_TAG" > $(BUILD)/release.md
+
+# Перед публикацией по тегу: формат vX.Y.Z и коммит уже в origin/main
+release-guard:
+	@[[ "$$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$$ ]] \
+		|| { echo "тег '$$RELEASE_TAG': ожидается vX.Y.Z"; exit 1; }
+	@git merge-base --is-ancestor HEAD origin/main \
+		|| { echo "коммит тега не входит в main: публикация отменена"; exit 1; }
+	@echo "тег $$RELEASE_TAG на коммите из main"
 
 ca-bundle:
 	$(PY) scripts/build_ca_bundle.py --out data/ca/ru-bundle.pem

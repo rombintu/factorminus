@@ -16,10 +16,14 @@ x-fm: &fm
   # Пути задаются здесь, а не из .env: значения из env_file (например, FM_DB_PATH=data/...
   # для локальной работы) не должны уводить запись внутрь образа.
   environment:
+    FM_HOME: /app
     FM_DATA_DIR: /var/lib/factorminus
     FM_DB_PATH: /var/lib/factorminus/fm.sqlite
     TINVEST_CA_BUNDLE: /opt/factorminus/ca/ru-bundle.pem
+    # отключение проверки TLS из .env в контейнере не действует
+    TINVEST_INSECURE_SSL: "0"
   read_only: true
+  pids_limit: 256
   tmpfs:
     - /tmp
   cap_drop: [ALL]
@@ -34,6 +38,7 @@ x-token: &token
 services:
   demo:
     <<: *fm
+    network_mode: none # синтетика: сеть не нужна
     entrypoint: ["/bin/sh", "-c"]
     # На этапе 2 сюда добавится `fm demo run --synthetic`.
     command:

@@ -47,19 +47,23 @@ def stage_for_tag(stages_md: Path, tag: str) -> dict[str, str]:
 
 def done_section(report: Path) -> str:
     """Раздел «## Что сделано» до следующего заголовка второго уровня."""
+    if not report.is_file():
+        raise ReleaseError(f"нет отчёта этапа {report}")
     out: list[str] = []
-    inside = False
+    inside = found = False
     for line in report.read_text(encoding="utf-8").splitlines():
         if line.startswith("## "):
             if inside:
                 break
             inside = line[3:].strip().lower() == "что сделано"
+            found = found or inside
             continue
         if inside:
             out.append(line)
-    if not inside and not out:
-        raise ReleaseError(f"{report}: нет раздела «## Что сделано»")
-    return "\n".join(out).strip()
+    text = "\n".join(out).strip()
+    if not found or not text:
+        raise ReleaseError(f"{report}: нет раздела «## Что сделано» или он пуст")
+    return text
 
 
 def render(docs: Path, tag: str, *, repo: str, run_url: str) -> str:

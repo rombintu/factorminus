@@ -1,6 +1,6 @@
 # CI/CD
 
-Все проверки — цели `Makefile`. Workflow в `.github/workflows/` только вызывают их, поэтому локально проверяется то же, что в CI: `make ci` (всё, кроме Docker и gitleaks).
+Все проверки — цели `Makefile`. Workflow в `.github/workflows/` только вызывают их, поэтому локально проверяется то же, что в CI: `make ci` (всё, кроме Docker и gitleaks). `make ci` нужна сеть до PyPI и индекса PyTorch: `lock-check` перекомпилирует lock-файлы.
 
 ## Схема
 
@@ -18,8 +18,8 @@
 | `lint` | `make lint` (ruff check + format --check), `make lint-docker` (actionlint, hadolint) | да |
 | `test` | `make test-cov`: pytest офлайн, покрытие с порогом `COV_MIN` | да |
 | `hygiene` | `make hygiene` (`scripts/check_repo_hygiene.py`), `make gitleaks` по всей истории | да |
-| `lockfiles` | `make lock-check`: перекомпиляция lock-файлов не даёт diff | да |
-| `contract` | `make contract-check`: схема в `docs/contract/` совпадает с кодом | да |
+| `lockfiles` | `make lock-check`: перекомпиляция lock-файлов не даёт diff; общие пакеты в `dev.txt` и `ml.txt` закреплены одинаково | да |
+| `contract` | `make contract-check`: схемы в `docs/contract/` совпадают с кодом, набор файлов тот же | да |
 | `docker` | сборка `runtime` и `test`, `make docker-test-run`, `make docker-demo` (smoke на синтетике без `.env`), `make docker-check` | да |
 | `audit` | `make audit` (pip-audit по `requirements/base.txt`) | нет: `continue-on-error`, исключения с причиной в `.github/pip-audit-ignore.txt` |
 | `summary` | `make ci-summary` | нет |
@@ -57,11 +57,11 @@
    git tag -a v0.1.5 -m "Этап 1.5: CI/CD, Docker и контроль этапов"
    git push origin v0.1.5
    ```
-3. `release.yml` прогоняет CI на этом коммите, публикует `ghcr.io/rombintu/factorminus:0.1.5`, `:0.1`, `:latest`, `:v0.1.5` (runtime) и `:0.1.5-ml`, `:v0.1.5-ml` (runtime-ml), затем создаёт GitHub Release. Текст: раздел «Что сделано» из отчёта этапа (`scripts/release_notes.py`), ссылки на образы и на прогон CI. Проверить текст заранее: `make release-notes RELEASE_TAG=v0.1.5 && cat build/release.md`.
+3. `release.yml` реагирует только на теги вида `vX.Y.Z`. Job `guard` (`make release-guard`) проверяет формат тега и то, что его коммит уже входит в `main`; иначе публикация не начинается. Затем `release.yml` прогоняет CI на этом коммите, публикует `ghcr.io/rombintu/factorminus:0.1.5`, `:0.1`, `:latest`, `:v0.1.5` (runtime) и `:0.1.5-ml`, `:v0.1.5-ml` (runtime-ml), затем создаёт GitHub Release. Текст: раздел «Что сделано» из отчёта этапа (`scripts/release_notes.py`), ссылки на образы и на прогон CI. Проверить текст заранее: `RELEASE_TAG=v0.1.5 make release-notes && cat build/release.md`.
 
 Push в `main` публикует `:main` и `:sha-<коротк>` (только runtime).
 
-**Почему публикация через переиспользуемый `ci.yml`, а не `workflow_run`.** Job-ы публикации зависят (`needs`) от вызова `ci.yml` в том же прогоне, поэтому образ собирается ровно из проверенного коммита, а весь путь «проверки → публикация» виден на одной странице. `workflow_run` запускается в контексте основной ветки с правами записи и требует вручную сверять `head_sha`; для публичного репозитория это лишний риск. Цена: на push в `main` CI идёт дважды (сам `ci.yml` и вызов из `release.yml`).
+**Почему публикация через переиспользуемый `ci.yml`, а не `workflow_run`.** Job-ы публикации зависят (`needs`) от вызова `ci.yml` в том же прогоне, поэтому образ собирается ровно из проверенного коммита, а весь путь «проверки → публикация» виден на одной странице. `workflow_run` запускается в контексте основной ветки с правами записи и требует вручную сверять `head_sha`; для публичного репозитория это лишний риск. Цена: на push в `main` CI идёт дважды (сам `ci.yml` и вызов из `release.yml`). Новый push отменяет предыдущий прогон `ci.yml` той же ветки, но не прогон внутри `release.yml`: каждый коммит в `main` доходит до публикации `:sha-<коротк>`.
 
 ## Пакет GHCR
 
@@ -115,7 +115,8 @@ EOF
 ## Безопасность workflow
 
 - Только `pull_request`, нигде нет `pull_request_target`: PR из чужих форков не получают секретов и прав записи.
-- Все сторонние actions закреплены по полному SHA коммита с комментарием версии; контейнеры инструментов (actionlint, hadolint, gitleaks) и базовый образ — по digest. Dependabot обновляет и то, и другое.
+- Все сторонние actions закреплены по полному SHA коммита с комментарием версии; базовый образ, frontend `docker/dockerfile`, образ buildkit (`driver-opts` у `setup-buildx-action`) и контейнеры инструментов (actionlint, hadolint, gitleaks) — по digest. Dependabot обновляет actions и базовый образ; digest buildkit и инструментов обновляются вручную.
+- Зависимости ставятся только из lock-файлов с хэшами (`--require-hashes`, в образе ещё `--only-binary=:all:`). setuptools для сборки пакета тоже закреплён (`requirements/build.txt`), сборка идёт без build isolation.
 - `permissions` на уровне workflow — `contents: read`; `packages: write` только у job-ов публикации в `_image.yml`, `contents: write` только у job создания Release.
 - `actions/checkout` с `persist-credentials: false`: токен не остаётся в `.git/config`.
 - Секретов, кроме встроенного `GITHUB_TOKEN`, нет. `TINVEST_TOKEN` в GitHub Secrets не добавляется.

@@ -70,3 +70,15 @@ def test_notes_have_images_and_ci_link(docs):
 def test_bad_tag_format(docs):
     with pytest.raises(rn.ReleaseError, match="vX.Y.Z"):
         rn.render(docs, "stage-1", repo="r/r", run_url="")
+
+
+def test_missing_report_is_release_error(docs):
+    (docs / "reports" / "STAGE_1_5_REPORT.md").unlink()
+    with pytest.raises(rn.ReleaseError, match="нет отчёта"):
+        rn.render(docs, "v0.1.5", repo="r/r", run_url="")
+
+
+def test_empty_done_section_is_error(docs):
+    (docs / "reports" / "STAGE_1_5_REPORT.md").write_text("# О\n\n## Что сделано\n\n## Дальше\n")
+    with pytest.raises(rn.ReleaseError, match="пуст"):
+        rn.render(docs, "v0.1.5", repo="r/r", run_url="")
