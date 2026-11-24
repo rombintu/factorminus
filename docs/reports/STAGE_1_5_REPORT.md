@@ -224,7 +224,7 @@ No known vulnerabilities found       (×3)
 | 8 | В образе нет `.env` и `*.sqlite`, не root, токена нет в `docker history` | да (`make docker-check`) |
 | 9 | Размеры и время сборки | да (раздел «Замеры») |
 | 10 | actionlint, hadolint; actions по SHA; нет `pull_request_target` | да локально; в CI — после push |
-| 11 | PR `infra` → `main`, зелёные проверки, ссылка на прогон | **нет**: push и PR ждут разрешения пользователя |
+| 11 | PR в `main`, зелёные проверки, ссылка на прогон | да: коммиты этапа добавлены в PR #1 (по решению пользователя), [прогон CI](https://github.com/rombintu/factorminus/actions/runs/45468559985) — все job зелёные; публикация `:main` проверится после merge |
 | 12 | `CI.md`, `DEPLOY.md`, `STAGES.md`, шаблон PR, `dependabot.yml`; `CONTEXT.md` и `README.md` | да |
 | 13 | Отчёт | этот файл |
 
@@ -239,7 +239,7 @@ No known vulnerabilities found       (×3)
 | `make docker-test` | тесты в контейнере 5,9 с |
 | `nightly` с нуля | 4 мин 3 с (75 бумаг, 123 177 свечей, равномерный лимит MCP) |
 | Покрытие | 91,41%, порог `COV_MIN=89` (91 − 2) |
-| Время CI | будет известно после первого прогона на GitHub |
+| Время CI (первый прогон, холодный кэш) | 2 мин 09 с всего; lint 27 с, test 42 с, hygiene 12 с, lockfiles 22 с, contract 20 с, docker 1 мин 46 с, audit 33 с, summary 17 с |
 
 ## Отклонения от ТЗ и решения
 
@@ -284,8 +284,8 @@ No known vulnerabilities found       (×3)
 
 ## Открытые вопросы
 
-1. **Push и PR.** Ветка `infra` готова, но не запушена. После разрешения: push `infra`, PR `infra` → `main`, ссылка на прогон CI в этом отчёте. Публикацию `:main` в GHCR можно проверить только после merge.
-2. **Порядок merge:** сначала PR #1 (`stage-1`), потом PR этапа 1.5. Иначе PR `infra` включит этап 1 целиком.
+1. **PR.** По решению пользователя коммиты этапа 1.5 добавлены в PR #1 (ветка `stage-1`, fast-forward), отдельного PR нет. Публикацию `:main` в GHCR можно проверить только после merge.
+2. **`ml.yml`** на момент записи ещё выполнялся; результат — на странице PR (проверка `ml`, merge не блокирует).
 3. **Защита `main` и видимость пакета GHCR** — настройки репозитория, инструкция и команда в `docs/CI.md`, не применялись.
 4. **ML smoke `Router(preload=True)`** локально не помещается в 3,8 ГБ Docker Desktop; для `fm-ml` нужно не меньше 8 ГБ (`docs/DEPLOY.md`). Первый настоящий прогон — `ml.yml` на GitHub.
 5. **`docs/tz/STAGE_2.md`** не закоммичен: он не относится к этапу 1.5.
