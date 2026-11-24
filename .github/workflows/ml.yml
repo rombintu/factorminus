@@ -1,0 +1,59 @@
+# ML: сборка runtime-ml (laya, torch CPU, веса в образе) и ML smoke без сети.
+# В merge не блокирует (не входит в обязательные проверки). Схема: docs/CI.md.
+name: ml
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1" # понедельник, 03:00 UTC
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/factorminus/analysis/labeler*"
+      - "requirements/ml.txt"
+      - "Dockerfile"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ml-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ml:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      IMAGE: factorminus
+      TAG: ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # torch и веса laya занимают несколько гигабайт: освобождаем место на раннере
+      - name: free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL && df -h /
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: start build timer
+        run: mkdir -p build/ci && date +%s > build/ci/.t0
+      - name: build runtime-ml
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: runtime-ml
+          load: true
+          tags: factorminus:ci-ml
+          cache-from: type=gha,scope=runtime-ml
+          cache-to: type=gha,mode=max,scope=runtime-ml
+      - name: stop build timer
+        run: echo $(( $(date +%s) - $(cat build/ci/.t0) )) > build/ci/build-runtime-ml.txt && rm build/ci/.t0
+      - run: make docker-test-ml
+      - name: summary
+        run: |
+          {
+            echo "## ML smoke"
+            echo
+            echo "Размер runtime-ml: $(( $(docker image inspect -f '{{.Size}}' factorminus:ci-ml) / 1024 / 1024 )) МБ"
+            echo "Сборка: $(cat build/ci/build-runtime-ml.txt) с"
+          } >> "$GITHUB_STEP_SUMMARY"

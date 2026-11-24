@@ -1,0 +1,78 @@
+# CD: публикация образов в GHCR и GitHub Release. Схема и порядок выпуска: docs/CI.md.
+#   push в main      → :main, :sha-<коротк> (только runtime)
+#   тег vX.Y.Z       → :X.Y.Z, :X.Y, :latest, :vX.Y.Z (runtime); :X.Y.Z-ml, :vX.Y.Z-ml (runtime-ml);
+#                      GitHub Release с разделом «Что сделано» из отчёта этапа
+# Публикация идёт только после зелёного CI на том же коммите: ci.yml вызывается здесь как
+# переиспользуемый workflow, job-ы публикации зависят от него (needs).
+# Теги ставит пользователь; workflow только реагирует на них.
+name: release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  runtime:
+    needs: ci
+    uses: ./.github/workflows/_image.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      target: runtime
+      tags: |
+        type=ref,event=branch
+        type=sha,prefix=sha-,format=short,enable=${{ github.ref == 'refs/heads/main' }}
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=ref,event=tag
+
+  runtime-ml:
+    needs: ci
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ./.github/workflows/_image.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      target: runtime-ml
+      flavor: latest=false
+      tags: |
+        type=semver,pattern={{version}},suffix=-ml
+        type=ref,event=tag,suffix=-ml
+
+  github-release:
+    needs: [runtime, runtime-ml]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: release notes
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: make release-notes RELEASE_TAG="$RELEASE_TAG"
+      - name: create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG" --notes-file build/release.md

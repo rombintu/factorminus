@@ -2,7 +2,8 @@
 # Один Dockerfile для CI и запуска. Цели:
 #   runtime     — CLI, nightly, демо, позже API (по умолчанию);
 #   runtime-ml  — runtime + laya (torch CPU) + веса laya, скачанные при сборке;
-#   test        — runtime + dev-зависимости + tests/: make docker-test.
+#   test        — runtime + dev-зависимости + tests/: make docker-test;
+#   test-ml     — runtime-ml + dev-зависимости + ML-тесты: make docker-test-ml.
 # Токена и .env в образе нет: они передаются только при запуске (compose env_file).
 
 ARG PYTHON_IMAGE=python:3.12-slim@sha256:191083cdf6c7bda8c76158983163ead5d5cf7b77cf3033e805bb0f5296f51b4b
@@ -50,12 +51,16 @@ RUN python /src/scripts/build_ca_bundle.py --certs /src/certs --out /opt/factorm
 
 # --- веса laya: скачиваются при сборке, холодный старт не ходит в сеть ---
 FROM venv-ml AS laya-weights
-# Router скачивает чекпойнты convaiinnovations/laya через huggingface_hub в $HF_HOME/hub;
-# ревизия закреплена, чтобы веса в образе не менялись между сборками.
+# Все три чекпойнта (english, multilingual, typed-decisions) — подпапки одного репозитория
+# convaiinnovations/laya (laya.router.BUNDLE_REPO); Router читает их из кэша huggingface_hub
+# в $HF_HOME/hub. Скачиваем снимок без загрузки моделей в память (сборке хватает 4 ГБ RAM).
+# Ревизия закреплена, чтобы веса в образе не менялись между сборками.
 ARG LAYA_REVISION=fd4f9dbcf4fde222fd43174bdd4c3b08b789e4e1
 ENV HF_HOME=/opt/hf LAYA_REVISION=${LAYA_REVISION}
-RUN python -c "from laya import Router; Router(preload=True)" \
+RUN python -c "import os; from huggingface_hub import snapshot_download; from laya.router import BUNDLE_REPO; print(snapshot_download(BUNDLE_REPO, revision=os.environ['LAYA_REVISION']))" \
     && rm -rf /opt/hf/xet /opt/hf/hub/.locks
+# процесс в runtime-ml не root: кэш весов только для чтения, но читаемый всеми
+RUN chmod -R a+rX,go-w /opt/hf
 
 # --- файлы из git, которые нужны во время работы (только чтение) ---
 FROM scratch AS app-files
@@ -82,7 +87,8 @@ RUN groupadd --system --gid 10001 fm \
        --shell /usr/sbin/nologin fm \
     && install -d -o 10001 -g 10001 -m 0750 /var/lib/factorminus
 COPY --from=venv-base /opt/venv /opt/venv
-COPY --from=app-files / /
+COPY --from=app-files /app /app
+COPY --from=app-files /opt/factorminus /opt/factorminus
 RUN --mount=type=bind,from=wheel,source=/wheels,target=/wheels \
     pip install --no-deps --no-index /wheels/*.whl
 USER 10001:10001
@@ -114,19 +120,17 @@ RUN groupadd --system --gid 10001 fm \
     && install -d -o 10001 -g 10001 -m 0750 /var/lib/factorminus
 COPY --from=venv-ml /opt/venv /opt/venv
 COPY --from=laya-weights /opt/hf /opt/hf
-COPY --from=app-files / /
+COPY --from=app-files /app /app
+COPY --from=app-files /opt/factorminus /opt/factorminus
 RUN --mount=type=bind,from=wheel,source=/wheels,target=/wheels \
     pip install --no-deps --no-index /wheels/*.whl
-# для make docker-test-ml: конфиг pytest и ML-тесты (без остальных тестов)
-COPY pyproject.toml /app/
-COPY tests/conftest.py tests/test_ml_smoke.py /app/tests/
 USER 10001:10001
 ENTRYPOINT ["fm"]
 CMD ["--help"]
 
 # --- test: pytest в контейнере (сеть в тестах заблокирована conftest) ---
 FROM runtime AS test
-USER root
+USER 0
 # venv-dev содержит те же закреплённые версии base плюс dev; factorminus из runtime остаётся
 COPY --from=venv-dev /opt/venv /opt/venv
 COPY pyproject.toml /app/pyproject.toml
@@ -137,3 +141,15 @@ COPY docs/contract /app/docs/contract
 USER 10001:10001
 ENTRYPOINT []
 CMD ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"]
+
+# --- test-ml: ML smoke в runtime-ml без сети (веса уже в образе) ---
+FROM runtime-ml AS test-ml
+USER 0
+# версии общих пакетов в dev.txt и ml.txt совпадают (один pyproject, uv universal)
+COPY requirements/dev.txt /tmp/requirements/dev.txt
+RUN pip install --require-hashes -r /tmp/requirements/dev.txt
+COPY pyproject.toml /app/pyproject.toml
+COPY tests/conftest.py tests/test_ml_smoke.py /app/tests/
+USER 10001:10001
+ENTRYPOINT []
+CMD ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "--ml", "-m", "ml"]
