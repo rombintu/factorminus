@@ -301,11 +301,11 @@ def test_cassette_rejects_bad_tool_name(tmp_path):
         Cassette(tmp_path).path("../evil", {})
 
 
-def test_default_cassette_dir_anchored_to_repo():
-    from factorminus.config import REPO_ROOT
+def test_default_cassette_dir_in_data_dir():
+    from factorminus.config import DATA_DIR
 
     client = McpClient(Settings(token=None), mode="replay")
-    assert client.cassette.root == REPO_ROOT / "data" / "cassettes"
+    assert client.cassette.root == DATA_DIR / "cassettes"
 
 
 def test_retry_after_respected_and_capped():

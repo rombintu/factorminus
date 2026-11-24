@@ -1,0 +1,25 @@
+# Белый список: в контекст сборки попадает только то, что перечислено ниже.
+# Так .env, data/ (БД, кассеты, CA-бандл), .git, .venv и кэши не попадут в образ даже случайно.
+*
+
+!pyproject.toml
+!README.md
+!LICENSE
+!src/
+!requirements/
+!certs/
+!scripts/
+!data/*.yaml
+!config/
+!tests/
+!docs/contract/
+
+# Внутри разрешённых каталогов — снова закрыть лишнее
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*
+**/*.sqlite
+**/*.sqlite-*
+**/*.log
+tests/fixtures/synthetic/cassettes

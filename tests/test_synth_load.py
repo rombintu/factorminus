@@ -4,6 +4,8 @@ import csv
 import json
 from pathlib import Path
 
+import pytest
+
 from factorminus.db import connect, table_counts
 from factorminus.synth.load import expected_errors, load_synth
 
@@ -133,6 +135,7 @@ def test_replay_missing_cassette_is_logged_not_fatal(tmp_path):
     assert s.errors == 2  # SYN_IDXC (ожидаемо) + SYN_OIL1
 
 
+@pytest.mark.git
 def test_cassettes_not_in_git():
     import subprocess
 

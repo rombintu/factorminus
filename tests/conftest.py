@@ -1,6 +1,14 @@
+import shutil
 import socket
+from pathlib import Path
 
 import pytest
+
+# Тесты с маркером git читают `git ls-files`. В образе `test` нет ни git, ни .git:
+# там они пропускаются, а в CI и локально выполняются.
+IN_GIT_CHECKOUT = (
+    shutil.which("git") is not None and (Path(__file__).resolve().parents[1] / ".git").exists()
+)
 
 
 def pytest_addoption(parser):
@@ -17,6 +25,11 @@ OPT_IN = {
 
 
 def pytest_collection_modifyitems(config, items):
+    if not IN_GIT_CHECKOUT:
+        skip_git = pytest.mark.skip(reason="нужен git-репозиторий (в образе test его нет)")
+        for item in items:
+            if "git" in item.keywords:
+                item.add_marker(skip_git)
     for marker, reason in OPT_IN.items():
         if config.getoption(f"--{marker}"):
             continue

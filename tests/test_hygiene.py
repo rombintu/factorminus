@@ -106,12 +106,14 @@ def test_fixture_exception_list(universe, monkeypatch):
     assert hy.check(universe, files + ["data/universe.yaml"]) == []
 
 
+@pytest.mark.git
 def test_current_repository_is_clean():
     files = hy.git_files(REPO)
     assert "data/universe.yaml" in files
     assert hy.check(REPO, files) == []
 
 
+@pytest.mark.git
 def test_main_exit_codes(universe, capsys):
     make(universe, {".env": "x"})
     subprocess.run(["git", "init", "-q"], cwd=universe, check=True)

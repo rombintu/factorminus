@@ -64,6 +64,7 @@ def test_synth_generate_refuses_foreign_dir(tmp_path):
     assert (tmp_path / "keep.txt").exists()
 
 
+@pytest.mark.git
 def test_only_universe_yaml_tracked_under_data():
     out = subprocess.run(
         ["git", "ls-files", "data", ".env"],

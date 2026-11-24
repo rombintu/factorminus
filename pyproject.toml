@@ -54,6 +54,7 @@ pythonpath = ["tests"]
 markers = [
   "live: требует сети и реального токена (make test-live)",
   "ml: требует laya и весов модели (make test-ml, образ runtime-ml)",
+  "git: читает git ls-files; без git-репозитория (образ test) пропускается",
 ]
 
 # Lock-файлы requirements/*.txt: make lock (uv pip compile). Только инструмент компиляции,

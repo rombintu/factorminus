@@ -1,0 +1,83 @@
+# Фактор-минус в Docker. Подробно: docs/DEPLOY.md.
+#   docker compose run --rm demo              — синтетика, без токена
+#   docker compose run --rm fm db stats       — любая команда CLI (профиль tools)
+#   docker compose run --rm nightly           — загрузка реальных данных, токен из .env
+#   docker compose run --rm fm-ml --help      — образ с laya (профиль ml)
+# Образ: ghcr.io/rombintu/factorminus:${FM_TAG:-main}; docker compose build — собрать локально.
+name: factorminus
+
+x-fm: &fm
+  image: ${FM_IMAGE:-ghcr.io/rombintu/factorminus:${FM_TAG:-main}}
+  build:
+    context: .
+    target: runtime
+  volumes:
+    - fm-data:/var/lib/factorminus
+  # Пути задаются здесь, а не из .env: значения из env_file (например, FM_DB_PATH=data/...
+  # для локальной работы) не должны уводить запись внутрь образа.
+  environment:
+    FM_DATA_DIR: /var/lib/factorminus
+    FM_DB_PATH: /var/lib/factorminus/fm.sqlite
+    TINVEST_CA_BUNDLE: /opt/factorminus/ca/ru-bundle.pem
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+
+x-token: &token
+  env_file:
+    - path: .env
+      required: false
+
+services:
+  demo:
+    <<: *fm
+    entrypoint: ["/bin/sh", "-c"]
+    # На этапе 2 сюда добавится `fm demo run --synthetic`.
+    command:
+      - >-
+        fm synth load --db "$$FM_DATA_DIR/fm_synth.sqlite"
+        && fm db stats --db "$$FM_DATA_DIR/fm_synth.sqlite"
+
+  fm:
+    <<: [*fm, *token]
+    profiles: [tools]
+
+  nightly:
+    <<: [*fm, *token]
+    profiles: [tools]
+    entrypoint: ["/bin/sh", "-c"]
+    # На этапе 2 заменится на `fm nightly`. Без токена первая команда завершится
+    # понятной ошибкой конфигурации (код 2).
+    command:
+      - >-
+        fm ingest --no-index
+        && fm index candles
+        && fm iss weights
+
+  fm-ml:
+    <<: [*fm, *token]
+    image: ${FM_IMAGE_ML:-ghcr.io/rombintu/factorminus:${FM_TAG:-main}-ml}
+    build:
+      context: .
+      target: runtime-ml
+    profiles: [ml]
+
+  # api (этап 3): FastAPI на порту 8000, проверка здоровья GET /health.
+  # Соглашение:
+  #   api:
+  #     <<: *fm
+  #     command: ["api", "--host", "0.0.0.0", "--port", "8000"]
+  #     ports: ["8000:8000"]
+  #     healthcheck:
+  #       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+  #       interval: 10s
+  #       timeout: 3s
+  #       retries: 5
+  #   Сервисы, которым нужен API (веб-сайт, e2e), объявляют
+  #     depends_on: {api: {condition: service_healthy}}
+
+volumes:
+  fm-data:
