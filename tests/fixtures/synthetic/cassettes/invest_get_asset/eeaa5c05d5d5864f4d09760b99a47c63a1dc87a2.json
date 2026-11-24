@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-ofzs"},"result":{"asset":{"brand":{"uid":"syn-brand-minfin"},"instruments":[{"classCode":"SYN","ticker":"SYN_OFZS"}],"name":"Министерство финансов Синтландии: ОФЗ Синт 2027","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-ofzs"}},"tool":"invest_get_asset"}

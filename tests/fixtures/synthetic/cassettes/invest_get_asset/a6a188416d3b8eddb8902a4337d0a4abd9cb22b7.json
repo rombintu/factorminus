@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-topco"},"result":{"asset":{"brand":{"uid":"syn-brand-topco"},"instruments":[{"classCode":"SYN","ticker":"SYN_TOPCO"}],"name":"УК «Синт-Инвест»: Синт — Топ российских компаний","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-topco"}},"tool":"invest_get_asset"}

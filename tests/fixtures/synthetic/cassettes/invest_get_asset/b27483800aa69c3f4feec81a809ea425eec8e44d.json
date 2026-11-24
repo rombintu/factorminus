@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-newco"},"result":{"asset":{"brand":{"uid":"syn-brand-newco"},"instruments":[{"classCode":"SYN","ticker":"SYN_NEWCO"}],"name":"ПАО «Синт-Новация»: Синт-Новация","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-newco"}},"tool":"invest_get_asset"}

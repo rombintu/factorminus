@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-bank2"},"result":{"asset":{"brand":{"uid":"syn-brand-bank2"},"instruments":[{"classCode":"SYN","ticker":"SYN_BANK2"}],"name":"ПАО «Банк Синт-Капитал»: Банк Синт-Капитал","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-bank2"}},"tool":"invest_get_asset"}

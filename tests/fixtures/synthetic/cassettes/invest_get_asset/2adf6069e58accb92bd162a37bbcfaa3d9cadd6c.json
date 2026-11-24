@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-money"},"result":{"asset":{"brand":{"uid":"syn-brand-money"},"instruments":[{"classCode":"SYN","ticker":"SYN_MONEY"}],"name":"УК «Синт-Капитал»: Синт Ликвидность","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-money"}},"tool":"invest_get_asset"}

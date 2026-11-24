@@ -1,0 +1,99 @@
+# Синтетическая вселенная (генерируется: fm synth generate)
+- id: SYN_OIL1
+  kind: share
+  role: share
+  note: Синтнефть
+- id: SYN_OIL2
+  kind: share
+  role: share
+  note: Нефтесинт
+- id: SYN_OIL3
+  kind: share
+  role: share
+  note: Синтгаз
+- id: SYN_OIL4
+  kind: share
+  role: share
+  note: Северная нефть
+- id: SYN_OIL5
+  kind: share
+  role: share
+  note: Синт-Переработка
+- id: SYN_BANK1
+  kind: share
+  role: share
+  note: Синтбанк ао
+- id: SYN_BANK1P
+  kind: share
+  role: share
+  note: Синтбанк ап
+- id: SYN_BANK2
+  kind: share
+  role: share
+  note: Банк Синт-Капитал
+- id: SYN_MET1
+  kind: share
+  role: share
+  note: Синтметалл
+- id: SYN_MET2
+  kind: share
+  role: share
+  note: Синтникель
+- id: SYN_TECH1
+  kind: share
+  role: share
+  note: Синтех
+- id: SYN_TECH2
+  kind: share
+  role: share
+  note: СинтСофт
+- id: SYN_RETAIL1
+  kind: share
+  role: share
+  note: СинтМаркет
+- id: SYN_TELECOM1
+  kind: share
+  role: share
+  note: СинтТелеком
+- id: SYN_POWER1
+  kind: share
+  role: share
+  note: СинтЭнерго
+- id: SYN_NEWCO
+  kind: share
+  role: share
+  note: Синт-Новация
+- id: SYN_IDXA
+  kind: etf
+  role: index_fund
+  index: SYNIDX
+  note: Синт-Капитал Индекс SYNIDX
+- id: SYN_IDXB
+  kind: etf
+  role: index_fund
+  index: SYNIDX
+  note: Первая Синт — Фонд индекса SYNIDX
+- id: SYN_TOPCO
+  kind: etf
+  role: active_fund
+  note: Синт — Топ российских компаний
+- id: SYN_DIVACT
+  kind: etf
+  role: active_fund
+  note: Синт Дивидендные акции
+- id: SYN_GOLD
+  kind: etf
+  role: gold_fund
+  note: Синт Золото
+- id: SYN_MONEY
+  kind: etf
+  role: money_fund
+  note: Синт Ликвидность
+- id: SYN_OFZS
+  kind: bond
+  role: ofz
+  note: ОФЗ Синт 2027
+- id: SYN_OFZL
+  kind: bond
+  role: ofz
+  note: ОФЗ Синт 2041

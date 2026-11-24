@@ -46,7 +46,7 @@ class Cassette:
         path.parent.mkdir(parents=True, exist_ok=True)
         payload = {"tool": tool, "arguments": args, "result": result}
         path.write_text(
-            json.dumps(payload, sort_keys=True, ensure_ascii=False, indent=1) + "\n",
+            canonical_json(payload) + "\n",
             encoding="utf-8",
         )
         return path

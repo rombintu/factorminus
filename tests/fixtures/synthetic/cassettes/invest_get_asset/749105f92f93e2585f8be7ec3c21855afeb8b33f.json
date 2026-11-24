@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-idxb"},"result":{"asset":{"brand":{"uid":"syn-brand-idxb"},"instruments":[{"classCode":"SYN","ticker":"SYN_IDXB"}],"name":"УК «Первая Синт»: Первая Синт — Фонд индекса SYNIDX","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-idxb"}},"tool":"invest_get_asset"}

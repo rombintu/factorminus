@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-met2"},"result":{"asset":{"brand":{"uid":"syn-brand-met2"},"instruments":[{"classCode":"SYN","ticker":"SYN_MET2"}],"name":"ПАО «Синтникель»: Синтникель","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-met2"}},"tool":"invest_get_asset"}

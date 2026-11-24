@@ -1,0 +1,478 @@
+[
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-oil1",
+  "brandUid": "syn-brand-oil1",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYOIL1000000",
+  "lot": 10,
+  "name": "Синтнефть",
+  "positionUid": "syn-pos-syn-oil1",
+  "role": "share",
+  "ticker": "SYN_OIL1"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-oil2",
+  "brandUid": "syn-brand-oil2",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYOIL2000000",
+  "lot": 10,
+  "name": "Нефтесинт",
+  "positionUid": "syn-pos-syn-oil2",
+  "role": "share",
+  "ticker": "SYN_OIL2"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-oil3",
+  "brandUid": "syn-brand-oil3",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYOIL3000000",
+  "lot": 10,
+  "name": "Синтгаз",
+  "positionUid": "syn-pos-syn-oil3",
+  "role": "share",
+  "ticker": "SYN_OIL3"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-oil4",
+  "brandUid": "syn-brand-oil4",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYOIL4000000",
+  "lot": 10,
+  "name": "Северная нефть",
+  "positionUid": "syn-pos-syn-oil4",
+  "role": "share",
+  "ticker": "SYN_OIL4"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-oil5",
+  "brandUid": "syn-brand-oil5",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYOIL5000000",
+  "lot": 10,
+  "name": "Синт-Переработка",
+  "positionUid": "syn-pos-syn-oil5",
+  "role": "share",
+  "ticker": "SYN_OIL5"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-bank1",
+  "brandUid": "syn-brand-bank1",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYBANK100000",
+  "lot": 10,
+  "name": "Синтбанк ао",
+  "positionUid": "syn-pos-syn-bank1",
+  "role": "share",
+  "ticker": "SYN_BANK1"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-bank1p",
+  "brandUid": "syn-brand-bank1",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYBANK1P0000",
+  "lot": 10,
+  "name": "Синтбанк ап",
+  "positionUid": "syn-pos-syn-bank1p",
+  "role": "share",
+  "ticker": "SYN_BANK1P"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-bank2",
+  "brandUid": "syn-brand-bank2",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYBANK200000",
+  "lot": 10,
+  "name": "Банк Синт-Капитал",
+  "positionUid": "syn-pos-syn-bank2",
+  "role": "share",
+  "ticker": "SYN_BANK2"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-met1",
+  "brandUid": "syn-brand-met1",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYMET1000000",
+  "lot": 10,
+  "name": "Синтметалл",
+  "positionUid": "syn-pos-syn-met1",
+  "role": "share",
+  "ticker": "SYN_MET1"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-met2",
+  "brandUid": "syn-brand-met2",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYMET2000000",
+  "lot": 10,
+  "name": "Синтникель",
+  "positionUid": "syn-pos-syn-met2",
+  "role": "share",
+  "ticker": "SYN_MET2"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-tech1",
+  "brandUid": "syn-brand-tech1",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYTECH100000",
+  "lot": 10,
+  "name": "Синтех",
+  "positionUid": "syn-pos-syn-tech1",
+  "role": "share",
+  "ticker": "SYN_TECH1"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-tech2",
+  "brandUid": "syn-brand-tech2",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYTECH200000",
+  "lot": 10,
+  "name": "СинтСофт",
+  "positionUid": "syn-pos-syn-tech2",
+  "role": "share",
+  "ticker": "SYN_TECH2"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-retail1",
+  "brandUid": "syn-brand-retail1",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYRETAIL1000",
+  "lot": 10,
+  "name": "СинтМаркет",
+  "positionUid": "syn-pos-syn-retail1",
+  "role": "share",
+  "ticker": "SYN_RETAIL1"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-telecom1",
+  "brandUid": "syn-brand-tel1",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYTELECOM100",
+  "lot": 10,
+  "name": "СинтТелеком",
+  "positionUid": "syn-pos-syn-telecom1",
+  "role": "share",
+  "ticker": "SYN_TELECOM1"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-power1",
+  "brandUid": "syn-brand-pow1",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYPOWER10000",
+  "lot": 10,
+  "name": "СинтЭнерго",
+  "positionUid": "syn-pos-syn-power1",
+  "role": "share",
+  "ticker": "SYN_POWER1"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-newco",
+  "brandUid": "syn-brand-newco",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "index": null,
+  "isin": "SYNEWCO00000",
+  "lot": 10,
+  "name": "Синт-Новация",
+  "positionUid": "syn-pos-syn-newco",
+  "role": "share",
+  "ticker": "SYN_NEWCO"
+ },
+ {
+  "apiTradeAvailableFlag": true,
+  "assetUid": "syn-asset-syn-absent",
+  "brandUid": "syn-brand-absent",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYABSENT0000",
+  "lot": 10,
+  "name": "Синт-Отсутствующая",
+  "positionUid": "syn-pos-syn-absent",
+  "role": "share",
+  "ticker": "SYN_ABSENT"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-idxa",
+  "brandUid": "syn-brand-idxa",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": "SYNIDX",
+  "isin": "SYIDXA000000",
+  "lot": 1,
+  "name": "Синт-Капитал Индекс SYNIDX",
+  "positionUid": "syn-pos-syn-idxa",
+  "role": "index_fund",
+  "ticker": "SYN_IDXA"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-idxb",
+  "brandUid": "syn-brand-idxb",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": "SYNIDX",
+  "isin": "SYIDXB000000",
+  "lot": 1,
+  "name": "Первая Синт — Фонд индекса SYNIDX",
+  "positionUid": "syn-pos-syn-idxb",
+  "role": "index_fund",
+  "ticker": "SYN_IDXB"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-topco",
+  "brandUid": "syn-brand-topco",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYTOPCO00000",
+  "lot": 1,
+  "name": "Синт — Топ российских компаний",
+  "positionUid": "syn-pos-syn-topco",
+  "role": "active_fund",
+  "ticker": "SYN_TOPCO"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-divact",
+  "brandUid": "syn-brand-divact",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYDIVACT0000",
+  "lot": 1,
+  "name": "Синт Дивидендные акции",
+  "positionUid": "syn-pos-syn-divact",
+  "role": "active_fund",
+  "ticker": "SYN_DIVACT"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-gold",
+  "brandUid": "syn-brand-gold",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYGOLD000000",
+  "lot": 1,
+  "name": "Синт Золото",
+  "positionUid": "syn-pos-syn-gold",
+  "role": "gold_fund",
+  "ticker": "SYN_GOLD"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-money",
+  "brandUid": "syn-brand-money",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYMONEY00000",
+  "lot": 1,
+  "name": "Синт Ликвидность",
+  "positionUid": "syn-pos-syn-money",
+  "role": "money_fund",
+  "ticker": "SYN_MONEY"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-ofzs",
+  "brandUid": "syn-brand-minfin",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYOFZS000000",
+  "lot": 1,
+  "maturityDate": "2027-06-16",
+  "name": "ОФЗ Синт 2027",
+  "positionUid": "syn-pos-syn-ofzs",
+  "role": "ofz",
+  "ticker": "SYN_OFZS"
+ },
+ {
+  "apiTradeAvailableFlag": false,
+  "assetUid": "syn-asset-syn-ofzl",
+  "brandUid": "syn-brand-minfin",
+  "classCode": "SYN",
+  "currency": "rub",
+  "dlongClient": {
+   "value": "0.2"
+  },
+  "exchange": "SYN",
+  "first1dayCandleDate": "2024-01-02T07:00:00Z",
+  "index": null,
+  "isin": "SYOFZL000000",
+  "lot": 1,
+  "maturityDate": "2041-05-15",
+  "name": "ОФЗ Синт 2041",
+  "positionUid": "syn-pos-syn-ofzl",
+  "role": "ofz",
+  "ticker": "SYN_OFZL"
+ }
+]

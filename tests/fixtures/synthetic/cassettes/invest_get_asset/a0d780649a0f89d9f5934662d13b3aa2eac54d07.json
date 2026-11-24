@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-idxa"},"result":{"asset":{"brand":{"uid":"syn-brand-idxa"},"instruments":[{"classCode":"SYN","ticker":"SYN_IDXA"}],"name":"УК «Синт-Капитал»: Синт-Капитал Индекс SYNIDX","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-idxa"}},"tool":"invest_get_asset"}

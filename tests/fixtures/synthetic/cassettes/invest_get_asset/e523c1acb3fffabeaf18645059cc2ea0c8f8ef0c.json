@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-oil1"},"result":{"asset":{"brand":{"uid":"syn-brand-oil1"},"instruments":[{"classCode":"SYN","ticker":"SYN_OIL1"}],"name":"ПАО «Синтнефть»: Синтнефть","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-oil1"}},"tool":"invest_get_asset"}

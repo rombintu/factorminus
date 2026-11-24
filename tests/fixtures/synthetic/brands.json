@@ -1,0 +1,186 @@
+{
+ "absent": {
+  "company": "ПАО «Синт-Отсутствующая»",
+  "countryOfRisk": "SY",
+  "description": "Машиностроительная компания (только в каталоге MCP, нет в базе).",
+  "name": "Синт-Отсутствующая",
+  "sector": "industrials",
+  "uid": "syn-brand-absent"
+ },
+ "bank1": {
+  "company": "ПАО «Синтбанк»",
+  "countryOfRisk": "SY",
+  "description": "Крупнейший универсальный банк: кредиты, вклады, платежи. Обыкновенные и привилегированные акции.",
+  "name": "Синтбанк",
+  "sector": "financial",
+  "uid": "syn-brand-bank1"
+ },
+ "bank2": {
+  "company": "ПАО «Банк Синт-Капитал»",
+  "countryOfRisk": "SY",
+  "description": "Розничный и корпоративный банк.",
+  "name": "Банк Синт-Капитал",
+  "sector": "financial",
+  "uid": "syn-brand-bank2"
+ },
+ "divact": {
+  "company": "УК «Синт-Актив»",
+  "countryOfRisk": "SY",
+  "description": "Активно управляемый фонд дивидендных акций.",
+  "name": "Синт Дивидендный",
+  "sector": "other",
+  "uid": "syn-brand-divact"
+ },
+ "gold": {
+  "company": "УК «Синт-Капитал»",
+  "countryOfRisk": "SY",
+  "description": "Фонд физического золота.",
+  "name": "Синт Золото",
+  "sector": "other",
+  "uid": "syn-brand-gold"
+ },
+ "idxa": {
+  "company": "УК «Синт-Капитал»",
+  "countryOfRisk": "SY",
+  "description": "Биржевой фонд повторяет индекс SYNIDX: крупнейшие акции синтетического рынка.",
+  "name": "Синт-Капитал Индекс",
+  "sector": "other",
+  "uid": "syn-brand-idxa"
+ },
+ "idxb": {
+  "company": "УК «Первая Синт»",
+  "countryOfRisk": "SY",
+  "description": "Фонд отслеживает индекс SYNIDX полной доходности.",
+  "name": "Первая Синт — Индекс",
+  "sector": "other",
+  "uid": "syn-brand-idxb"
+ },
+ "met1": {
+  "company": "ПАО «Синтметалл»",
+  "countryOfRisk": "SY",
+  "description": "Производство стали и металлопроката.",
+  "name": "Синтметалл",
+  "sector": "materials",
+  "uid": "syn-brand-met1"
+ },
+ "met2": {
+  "company": "ПАО «Синтникель»",
+  "countryOfRisk": "SY",
+  "description": "Добыча никеля, меди и металлов платиновой группы.",
+  "name": "Синтникель",
+  "sector": "materials",
+  "uid": "syn-brand-met2"
+ },
+ "minfin": {
+  "company": "Министерство финансов Синтландии",
+  "countryOfRisk": "SY",
+  "description": "Государственные облигации федерального займа.",
+  "name": "Минфин Синт",
+  "sector": "government",
+  "uid": "syn-brand-minfin"
+ },
+ "money": {
+  "company": "УК «Синт-Капитал»",
+  "countryOfRisk": "SY",
+  "description": "Фонд денежного рынка: сделки обратного РЕПО с ЦК.",
+  "name": "Синт Ликвидность",
+  "sector": "other",
+  "uid": "syn-brand-money"
+ },
+ "newco": {
+  "company": "ПАО «Синт-Новация»",
+  "countryOfRisk": "SY",
+  "description": "Технологическая компания, недавнее IPO.",
+  "name": "Синт-Новация",
+  "sector": "it",
+  "uid": "syn-brand-newco"
+ },
+ "oil1": {
+  "company": "ПАО «Синтнефть»",
+  "countryOfRisk": "SY",
+  "description": "Вертикально интегрированная нефтяная компания: добыча и переработка нефти.",
+  "name": "Синтнефть",
+  "sector": "energy",
+  "uid": "syn-brand-oil1"
+ },
+ "oil2": {
+  "company": "ПАО «Нефтесинт»",
+  "countryOfRisk": "SY",
+  "description": "Добыча нефти и газового конденсата, экспорт нефти.",
+  "name": "Нефтесинт",
+  "sector": "energy",
+  "uid": "syn-brand-oil2"
+ },
+ "oil3": {
+  "company": "ПАО «Синтгаз»",
+  "countryOfRisk": "SY",
+  "description": "Добыча природного газа и нефти, трубопроводный экспорт.",
+  "name": "Синтгаз",
+  "sector": "energy",
+  "uid": "syn-brand-oil3"
+ },
+ "oil4": {
+  "company": "ПАО «Северная нефть»",
+  "countryOfRisk": "SY",
+  "description": "Нефтедобывающая компания Западной Сибири.",
+  "name": "Северная нефть",
+  "sector": "energy",
+  "uid": "syn-brand-oil4"
+ },
+ "oil5": {
+  "company": "ПАО «Синт-Переработка»",
+  "countryOfRisk": "SY",
+  "description": "Нефтепереработка и сеть АЗС, нефтехимия.",
+  "name": "Синт-Переработка",
+  "sector": "energy",
+  "uid": "syn-brand-oil5"
+ },
+ "pow1": {
+  "company": "ПАО «СинтЭнерго»",
+  "countryOfRisk": "SY",
+  "description": "Генерация электроэнергии.",
+  "name": "СинтЭнерго",
+  "sector": "utilities",
+  "uid": "syn-brand-pow1"
+ },
+ "retail1": {
+  "company": "ПАО «СинтМаркет»",
+  "countryOfRisk": "SY",
+  "description": "Сеть продуктовых магазинов.",
+  "name": "СинтМаркет",
+  "sector": "consumer",
+  "uid": "syn-brand-retail1"
+ },
+ "tech1": {
+  "company": "МКПАО «Синтех»",
+  "countryOfRisk": "SY",
+  "description": "Интернет-компания: поиск, такси, электронная коммерция.",
+  "name": "Синтех",
+  "sector": "it",
+  "uid": "syn-brand-tech1"
+ },
+ "tech2": {
+  "company": "ПАО «СинтСофт»",
+  "countryOfRisk": "SY",
+  "description": "Разработка корпоративного ПО.",
+  "name": "СинтСофт",
+  "sector": "it",
+  "uid": "syn-brand-tech2"
+ },
+ "tel1": {
+  "company": "ПАО «СинтТелеком»",
+  "countryOfRisk": "SY",
+  "description": "Мобильная связь и интернет.",
+  "name": "СинтТелеком",
+  "sector": "telecom",
+  "uid": "syn-brand-tel1"
+ },
+ "topco": {
+  "company": "УК «Синт-Инвест»",
+  "countryOfRisk": "SY",
+  "description": "Фонд инвестирует в акции крупнейших и наиболее ликвидных компаний рынка.",
+  "name": "Синт Топ Компаний",
+  "sector": "other",
+  "uid": "syn-brand-topco"
+ }
+}

@@ -273,6 +273,43 @@ def ingest(
         typer.echo(f"Ошибки: SELECT * FROM ingest_errors WHERE run_id={summary.run_id}")
 
 
+# --- synth ---
+
+SYNTH_DIR = REPO_ROOT / "tests" / "fixtures" / "synthetic"
+
+
+@synth_app.command("generate")
+@friendly_errors
+def synth_generate(
+    seed: Annotated[int, typer.Option()] = 42,
+    out: Annotated[Path, typer.Option()] = SYNTH_DIR,
+) -> None:
+    """Сгенерировать синтетический набор (детерминированно по seed)."""
+    from factorminus.synth.generator import generate, write_dataset
+
+    ds = generate(seed)
+    write_dataset(ds, out)
+    typer.echo(
+        f"seed={seed}: {len(ds.specs)} бумаг, {ds.dates[0]} … {ds.last_date}, "
+        f"{len(ds.manifest['expected'])} ожидаемых свойств → {out}"
+    )
+
+
+@synth_app.command("load")
+@friendly_errors
+def synth_load(
+    db: Annotated[Path, typer.Option("--db")] = REPO_ROOT / "data" / "fm_synth.sqlite",
+    fixtures: Annotated[Path, typer.Option()] = SYNTH_DIR,
+) -> None:
+    """Загрузить синтетику в SQLite через конвейер в режиме replay (без сети)."""
+    from factorminus.synth.load import load_synth
+
+    summary = load_synth(db, fixtures)
+    typer.echo(f"{db}: {summary.text()}")
+    if summary.errors:
+        raise typer.Exit(1)
+
+
 def run() -> None:  # pragma: no cover
     try:
         app()

@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-divact"},"result":{"asset":{"brand":{"uid":"syn-brand-divact"},"instruments":[{"classCode":"SYN","ticker":"SYN_DIVACT"}],"name":"УК «Синт-Актив»: Синт Дивидендные акции","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-divact"}},"tool":"invest_get_asset"}

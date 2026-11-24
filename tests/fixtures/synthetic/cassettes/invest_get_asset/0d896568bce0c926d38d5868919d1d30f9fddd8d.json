@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-power1"},"result":{"asset":{"brand":{"uid":"syn-brand-pow1"},"instruments":[{"classCode":"SYN","ticker":"SYN_POWER1"}],"name":"ПАО «СинтЭнерго»: СинтЭнерго","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-power1"}},"tool":"invest_get_asset"}

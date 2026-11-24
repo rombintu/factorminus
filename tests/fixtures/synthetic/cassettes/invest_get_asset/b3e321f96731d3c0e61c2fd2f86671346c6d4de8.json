@@ -1,0 +1,1 @@
+{"arguments":{"id":"syn-asset-syn-oil2"},"result":{"asset":{"brand":{"uid":"syn-brand-oil2"},"instruments":[{"classCode":"SYN","ticker":"SYN_OIL2"}],"name":"ПАО «Нефтесинт»: Нефтесинт","type":"ASSET_TYPE_SECURITY","uid":"syn-asset-syn-oil2"}},"tool":"invest_get_asset"}
