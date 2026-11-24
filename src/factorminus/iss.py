@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+import ssl
 
 import httpx
 
@@ -35,12 +36,16 @@ def parse_iss_analytics(payload: dict) -> list[dict]:
 
 
 def fetch_index_weights(
-    index_id: str, *, transport: httpx.BaseTransport | None = None, timeout: float = 30.0
+    index_id: str,
+    *,
+    verify: ssl.SSLContext | bool = True,
+    transport: httpx.BaseTransport | None = None,
+    timeout: float = 30.0,
 ) -> list[dict]:
     """Веса индекса на последнюю доступную дату. ISS отдаёт до 100 строк за запрос."""
     rows: list[dict] = []
     start = 0
-    with httpx.Client(timeout=timeout, transport=transport) as http:
+    with httpx.Client(timeout=timeout, verify=verify, transport=transport) as http:
         while True:
             resp = http.get(ISS_URL.format(index=index_id) + f"&start={start}")
             resp.raise_for_status()

@@ -144,15 +144,30 @@ def test_parse_candles():
     assert parse_candles({}) == []
 
 
-def test_parse_risk_rates():
+def test_parse_risk_rates_real_shape():
+    # форма реального ответа (24.11.2026): списки по уровням риска, порядок как в запросе
     payload = {
         "instrumentRiskRates": [
             {
                 "instrumentUid": "uid-1",
-                "longRiskRate": {"value": {"units": "0", "nano": 200000000}},
-                "shortRiskRate": {"value": "0.25"},
+                "longRiskRates": [
+                    {"riskLevelCode": "HIGH", "value": {"value": "0.125"}},
+                    {"riskLevelCode": "STANDARD", "value": {"value": "0.2"}},
+                ],
+                "shortRiskRates": [
+                    {"riskLevelCode": "HIGH", "value": {"value": "0.1428"}},
+                    {"riskLevelCode": "STANDARD", "value": {"units": "0", "nano": 250000000}},
+                ],
             },
-            {"instrumentUid": "uid-2", "error": "not found"},
+            {"instrumentUid": "", "longRiskRates": [], "shortRiskRates": []},
         ]
     }
-    assert parse_risk_rates(payload) == {"uid-1": (0.2, 0.25), "uid-2": (None, None)}
+    assert parse_risk_rates(payload) == [
+        {
+            "uid": "uid-1",
+            "long": {"HIGH": 0.125, "STANDARD": 0.2},
+            "short": {"HIGH": 0.1428, "STANDARD": 0.25},
+        },
+        {"uid": None, "long": {}, "short": {}},
+    ]
+    assert parse_risk_rates({}) == []

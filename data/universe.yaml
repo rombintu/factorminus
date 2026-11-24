@@ -1,0 +1,231 @@
+# Вселенная бумаг для демо-портфелей и кандидатов на покупку (ТЗ этапа 1, п. 1.4).
+# Фонды указаны в классе TQBR: в 2026 году TQTF больше не получает свечей (проверено 24.11.2026).
+# Это справочник идентификаторов, не рыночные данные. Проверка: fm universe verify.
+- id: TMOS_TQBR
+  kind: etf
+  role: index_fund
+  index: IMOEX
+  note: Т-Капитал Индекс МосБиржи (Крупнейшие компании РФ)
+- id: SBMX_TQBR
+  kind: etf
+  role: index_fund
+  index: IMOEX
+  note: Первая — Фонд Топ Российских акций
+- id: EQMX_TQBR
+  kind: etf
+  role: index_fund
+  index: IMOEX
+  note: ВИМ — Индекс МосБиржи
+- id: AMIX_TQBR
+  kind: etf
+  role: index_fund
+  index: IMOEX
+  note: АТОН — Индекс МосБиржи (найден через find_instrument)
+- id: TGLD_TQBR
+  kind: etf
+  role: gold_fund
+  note: Т-Капитал Золото
+- id: LQDT_TQBR
+  kind: etf
+  role: money_fund
+  note: ВИМ Ликвидность
+- id: AKMM_TQBR
+  kind: etf
+  role: money_fund
+  note: Альфа-Капитал Денежный рынок
+- id: TBRU_TQBR
+  kind: etf
+  role: bond_fund
+  note: Т-Капитал Облигации
+- id: SBGB_TQBR
+  kind: etf
+  role: bond_fund
+  note: Первая Гособлигации
+- id: TRUR_TQBR
+  kind: etf
+  role: active_fund
+  note: Т-Капитал Вечный портфель
+- id: DIVD_TQBR
+  kind: etf
+  role: active_fund
+  note: Дивидендные акции
+- id: AKME_TQBR
+  kind: etf
+  role: active_fund
+  note: Альфа-Капитал Управляемые акции
+- id: SBER_TQBR
+  kind: share
+  role: share
+  note: банки и финансы
+- id: SBERP_TQBR
+  kind: share
+  role: share
+  note: банки и финансы
+- id: VTBR_TQBR
+  kind: share
+  role: share
+  note: банки и финансы
+- id: T_TQBR
+  kind: share
+  role: share
+  note: банки и финансы
+- id: MOEX_TQBR
+  kind: share
+  role: share
+  note: банки и финансы
+- id: LKOH_TQBR
+  kind: share
+  role: share
+  note: нефть и газ
+- id: ROSN_TQBR
+  kind: share
+  role: share
+  note: нефть и газ
+- id: TATN_TQBR
+  kind: share
+  role: share
+  note: нефть и газ
+- id: TATNP_TQBR
+  kind: share
+  role: share
+  note: нефть и газ
+- id: GAZP_TQBR
+  kind: share
+  role: share
+  note: нефть и газ
+- id: NVTK_TQBR
+  kind: share
+  role: share
+  note: нефть и газ
+- id: SNGS_TQBR
+  kind: share
+  role: share
+  note: нефть и газ
+- id: SNGSP_TQBR
+  kind: share
+  role: share
+  note: нефть и газ
+- id: SIBN_TQBR
+  kind: share
+  role: share
+  note: нефть и газ
+- id: TRNFP_TQBR
+  kind: share
+  role: share
+  note: нефть и газ
+- id: GMKN_TQBR
+  kind: share
+  role: share
+  note: металлы и добыча
+- id: CHMF_TQBR
+  kind: share
+  role: share
+  note: металлы и добыча
+- id: NLMK_TQBR
+  kind: share
+  role: share
+  note: металлы и добыча
+- id: MAGN_TQBR
+  kind: share
+  role: share
+  note: металлы и добыча
+- id: PLZL_TQBR
+  kind: share
+  role: share
+  note: металлы и добыча
+- id: ALRS_TQBR
+  kind: share
+  role: share
+  note: металлы и добыча
+- id: RUAL_TQBR
+  kind: share
+  role: share
+  note: металлы и добыча
+- id: PHOR_TQBR
+  kind: share
+  role: share
+  note: удобрения
+- id: YDEX_TQBR
+  kind: share
+  role: share
+  note: технологии и интернет
+- id: OZON_TQBR
+  kind: share
+  role: share
+  note: технологии и интернет
+- id: HEAD_TQBR
+  kind: share
+  role: share
+  note: технологии и интернет
+- id: X5_TQBR
+  kind: share
+  role: share
+  note: ритейл
+- id: MGNT_TQBR
+  kind: share
+  role: share
+  note: ритейл
+- id: MTSS_TQBR
+  kind: share
+  role: share
+  note: телеком и группа АФК
+- id: RTKM_TQBR
+  kind: share
+  role: share
+  note: телеком и группа АФК
+- id: AFKS_TQBR
+  kind: share
+  role: share
+  note: телеком и группа АФК
+- id: PIKK_TQBR
+  kind: share
+  role: share
+  note: девелоперы
+- id: SMLT_TQBR
+  kind: share
+  role: share
+  note: девелоперы
+- id: IRAO_TQBR
+  kind: share
+  role: share
+  note: электроэнергетика
+- id: HYDR_TQBR
+  kind: share
+  role: share
+  note: электроэнергетика
+- id: SU26236RMFS8_TQOB
+  kind: bond
+  role: ofz
+  note: ОФЗ 26236, короткая (2028)
+- id: SU26233RMFS5_TQOB
+  kind: bond
+  role: ofz
+  note: ОФЗ 26233, средняя (2035)
+- id: SU26238RMFS4_TQOB
+  kind: bond
+  role: ofz
+  note: ОФЗ 26238, длинная (2041)
+- id: RU000A101012_TQCB
+  kind: bond
+  role: corp_bond
+  note: АФК Система БО 001P-12 (2029)
+- id: RU000A1078S8_TQCB
+  kind: bond
+  role: corp_bond
+  note: МТС 002P-02 (2028)
+- id: RU000A105SP3_TQCB
+  kind: bond
+  role: corp_bond
+  note: Сегежа 003P-02R (2038)
+- id: RU000A105VU7_TQCB
+  kind: bond
+  role: corp_bond
+  note: Эталон-Финанс 002Р-01 (2038)
+- id: RU000A0JXQ44_TQCB
+  kind: bond
+  role: corp_bond
+  note: РЖД БО-001P-02R (2037), вне группы АФК
+- id: RU000A107050_TQCB
+  kind: bond
+  role: corp_bond
+  note: Газпром капитал БО-002Р-09 (2028), вне группы АФК

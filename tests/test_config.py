@@ -125,3 +125,10 @@ def test_ca_bundle_must_exist(tmp_path):
     )
     with pytest.raises(ConfigError, match="TINVEST_CA_BUNDLE"):
         s.ssl_verify()
+
+
+def test_relative_ca_bundle_resolved_from_repo_root(tmp_path):
+    from factorminus.config import REPO_ROOT
+
+    s = load_settings(env={"TINVEST_CA_BUNDLE": "data/ca/x.pem"}, env_file=tmp_path / "x")
+    assert s.ca_bundle == str(REPO_ROOT / "data/ca/x.pem")

@@ -136,18 +136,27 @@ def parse_candles(payload: Any) -> list[dict]:
     return rows
 
 
-def _rate(v: Any) -> float | None:
-    if isinstance(v, dict) and "value" in v:
-        return to_float(v["value"])
-    return to_float(v)
-
-
-def parse_risk_rates(payload: Any) -> dict[str, tuple[float | None, float | None]]:
-    """`{instrumentUid: (long, short)}`."""
-    items = payload.get("instrumentRiskRates", []) if isinstance(payload, dict) else payload or []
-    out: dict[str, tuple[float | None, float | None]] = {}
-    for r in items:
-        uid = _first(r, "instrumentUid", "instrumentId", "uid")
-        if uid:
-            out[uid] = (_rate(r.get("longRiskRate")), _rate(r.get("shortRiskRate")))
+def _levels(items: Any) -> dict[str, float]:
+    out: dict[str, float] = {}
+    for it in items or []:
+        v = to_float(it.get("value"))
+        if it.get("riskLevelCode") and v is not None:
+            out[it["riskLevelCode"]] = v
     return out
+
+
+def parse_risk_rates(payload: Any) -> list[dict]:
+    """Ставки риска в порядке запроса: `[{"uid", "long": {уровень: ставка}, "short": {...}}]`.
+
+    Реальный ответ (проверено 24.11.2026) адресует бумаги по `instrumentUid`, которого нет
+    в карточке, и сохраняет порядок запроса (для неизвестной бумаги uid пустой).
+    """
+    items = payload.get("instrumentRiskRates", []) if isinstance(payload, dict) else payload or []
+    return [
+        {
+            "uid": r.get("instrumentUid") or None,
+            "long": _levels(r.get("longRiskRates")),
+            "short": _levels(r.get("shortRiskRates")),
+        }
+        for r in items
+    ]

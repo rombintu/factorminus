@@ -129,6 +129,12 @@ def _check_mcp_url(url: str) -> str:
     return url
 
 
+def _resolve(path: str | None) -> str | None:
+    if path is None or Path(path).is_absolute():
+        return path
+    return str(REPO_ROOT / path)
+
+
 def load_settings(env: Mapping[str, str] | None = None, env_file: Path | None = None) -> Settings:
     env = os.environ if env is None else env
     dotenv = _read_dotenv(env_file if env_file is not None else REPO_ROOT / ".env")
@@ -144,7 +150,7 @@ def load_settings(env: Mapping[str, str] | None = None, env_file: Path | None = 
     return Settings(
         token=get("TINVEST_TOKEN"),
         mcp_url=_check_mcp_url(get("TINVEST_MCP_URL") or DEFAULT_MCP_URL),
-        ca_bundle=get("TINVEST_CA_BUNDLE"),
+        ca_bundle=_resolve(get("TINVEST_CA_BUNDLE")),
         insecure_ssl=get("TINVEST_INSECURE_SSL") == "1",
         db_path=db_path,
     )
