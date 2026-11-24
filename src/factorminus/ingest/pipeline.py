@@ -11,6 +11,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from factorminus.db import now_iso
+from factorminus.ingest.issuer import pick_issuer
 from factorminus.ingest.parse import (
     parse_asset,
     parse_brand,
@@ -46,6 +47,27 @@ def candle_windows(
 
 def candle_args(instrument_id: str, frm: str, to: str) -> dict:
     return {"instrumentId": instrument_id, "interval": "CANDLE_INTERVAL_DAY", "from": frm, "to": to}
+
+
+def store_candles(conn: sqlite3.Connection, instrument_id: str, rows: list[dict]) -> int:
+    """UPSERT дневных свечей. Возвращает число новых строк."""
+    count = "SELECT COUNT(*) FROM candles WHERE instrument_id=?"
+    before = conn.execute(count, (instrument_id,)).fetchone()[0]
+    conn.execute("BEGIN")
+    try:
+        conn.executemany(
+            "INSERT INTO candles(instrument_id, date, open, high, low, close, volume) "
+            "VALUES (:iid, :date, :open, :high, :low, :close, :volume) "
+            "ON CONFLICT(instrument_id, date) DO UPDATE SET open=excluded.open, "
+            "high=excluded.high, low=excluded.low, close=excluded.close, "
+            "volume=excluded.volume",
+            [dict(r, iid=instrument_id) for r in rows],
+        )
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+    return conn.execute(count, (instrument_id,)).fetchone()[0] - before
 
 
 @dataclass
@@ -162,6 +184,23 @@ class _Run:
         self.brand_cache.add(brand_uid)
         self.summary.brands += 1
 
+    def issuer(self, e: UniverseEntry) -> None:
+        row = self.conn.execute(
+            "SELECT b.name, b.company FROM instruments i LEFT JOIN brands b USING(brand_uid) "
+            "WHERE i.instrument_id=?",
+            (e.id,),
+        ).fetchone()
+        display, key = pick_issuer(
+            override=e.issuer,
+            kind=e.kind,
+            brand_name=row[0] if row else None,
+            brand_company=row[1] if row else None,
+        )
+        self.conn.execute(
+            "UPDATE instruments SET issuer=?, issuer_key=? WHERE instrument_id=?",
+            (display, key, e.id),
+        )
+
     def candles(
         self, e: UniverseEntry, since: date, until: date, listed: str | None = None
     ) -> None:
@@ -190,26 +229,7 @@ class _Run:
                 except _STEP_ERRORS as ex:
                     self.error(e.id, "candles", ex)
                     return
-                self.summary.candles += self._store_candles(e.id, rows)
-
-    def _store_candles(self, instrument_id: str, rows: list[dict]) -> int:
-        count = "SELECT COUNT(*) FROM candles WHERE instrument_id=?"
-        before = self.conn.execute(count, (instrument_id,)).fetchone()[0]
-        self.conn.execute("BEGIN")
-        try:
-            self.conn.executemany(
-                "INSERT INTO candles(instrument_id, date, open, high, low, close, volume) "
-                "VALUES (:iid, :date, :open, :high, :low, :close, :volume) "
-                "ON CONFLICT(instrument_id, date) DO UPDATE SET open=excluded.open, "
-                "high=excluded.high, low=excluded.low, close=excluded.close, "
-                "volume=excluded.volume",
-                [dict(r, iid=instrument_id) for r in rows],
-            )
-            self.conn.execute("COMMIT")
-        except Exception:
-            self.conn.execute("ROLLBACK")
-            raise
-        return self.conn.execute(count, (instrument_id,)).fetchone()[0] - before
+                self.summary.candles += store_candles(self.conn, e.id, rows)
 
     def risk_rates(self, loaded: list[tuple[str, dict]]) -> None:
         for i in range(0, len(loaded), RISK_BATCH):
@@ -275,6 +295,7 @@ def run_ingest(
                 continue
             loaded.append((e.id, card))
             run.asset_and_brand(e, card["asset_uid"])
+            run.issuer(e)
             run.candles(e, since, until, listed=card["first_day_candle"])
         run.risk_rates(loaded)
     except McpTransportError as ex:

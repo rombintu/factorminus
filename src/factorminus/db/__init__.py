@@ -93,3 +93,81 @@ def candle_ranges(conn: sqlite3.Connection) -> dict:
         "SELECT COUNT(DISTINCT instrument_id), MIN(date), MAX(date) FROM candles"
     ).fetchone()
     return {"instruments": r[0], "min_date": r[1], "max_date": r[2]}
+
+
+def issuer_summary(conn: sqlite3.Connection) -> dict:
+    """Число различных эмитентов и бумаги без эмитента."""
+    n = conn.execute(
+        "SELECT COUNT(DISTINCT issuer_key) FROM instruments WHERE issuer_key IS NOT NULL"
+    ).fetchone()[0]
+    missing = [
+        r[0]
+        for r in conn.execute(
+            "SELECT instrument_id FROM instruments WHERE issuer_key IS NULL "
+            "AND kind != 'index' ORDER BY instrument_id"
+        )
+    ]
+    return {"issuers": n, "without_issuer": missing}
+
+
+def latest_weights_date(conn: sqlite3.Connection, index_id: str) -> str | None:
+    return conn.execute(
+        "SELECT MAX(trade_date) FROM index_weights WHERE index_id=?", (index_id,)
+    ).fetchone()[0]
+
+
+def map_index_tickers(conn: sqlite3.Connection, index_id: str) -> dict[str, str | None]:
+    """Тикер из весов индекса (SBER) → instrument_id вселенной (SBER_TQBR) на последнюю дату.
+
+    Сначала ищется класс TQBR, затем точное совпадение тикера в любом классе
+    (синтетика: тикер = SYN_*). Нет в базе — None.
+    """
+    d = latest_weights_date(conn, index_id)
+    out: dict[str, str | None] = {}
+    for (ticker,) in conn.execute(
+        "SELECT ticker FROM index_weights WHERE index_id=? AND trade_date=? ORDER BY weight DESC",
+        (index_id, d),
+    ):
+        row = conn.execute(
+            "SELECT instrument_id FROM instruments WHERE ticker=? AND kind != 'index' "
+            "ORDER BY class_code != 'TQBR', instrument_id LIMIT 1",
+            (ticker,),
+        ).fetchone()
+        out[ticker] = row[0] if row else None
+    return out
+
+
+def index_coverage(conn: sqlite3.Connection, index_id: str) -> dict:
+    """Доля веса индекса (на последнюю дату), чьи бумаги есть во вселенной."""
+    d = latest_weights_date(conn, index_id)
+    weights = dict(
+        conn.execute(
+            "SELECT ticker, weight FROM index_weights WHERE index_id=? AND trade_date=?",
+            (index_id, d),
+        ).fetchall()
+    )
+    mapping = map_index_tickers(conn, index_id)
+    total = sum(weights.values()) or 1.0
+    covered = sum(w for t, w in weights.items() if mapping.get(t))
+    return {
+        "trade_date": d,
+        "coverage_pct": round(covered / total * 100, 2),
+        "missing": sorted(t for t, iid in mapping.items() if iid is None),
+    }
+
+
+def quality_stats(conn: sqlite3.Connection) -> dict:
+    """Быстрая проверка качества данных после загрузки."""
+    weekend = conn.execute(
+        "SELECT COUNT(*) FROM candles WHERE strftime('%w', date) IN ('0', '6')"
+    ).fetchone()[0]
+    rows = conn.execute(
+        "SELECT i.instrument_id, b.sector FROM instruments i LEFT JOIN brands b USING(brand_uid) "
+        "WHERE i.kind != 'index' ORDER BY i.instrument_id"
+    ).fetchall()
+    without = [r[0] for r in rows if not r[1]]
+    return {
+        "weekend_candles": weekend,
+        "without_sector": without,
+        "without_sector_pct": round(len(without) / len(rows) * 100, 1) if rows else 0.0,
+    }

@@ -31,6 +31,7 @@ class UniverseEntry(BaseModel):
     kind: Kind
     role: Role
     index: str | None = None
+    issuer: str | None = None  # ручное переопределение эмитента (облигации через «дочки»)
     note: str = ""
 
     @field_validator("id")

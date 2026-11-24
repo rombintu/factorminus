@@ -112,7 +112,13 @@ def db_init(db: DbOpt = None) -> None:
 @friendly_errors
 def db_stats(db: DbOpt = None) -> None:
     """Счётчики по таблицам и диапазон дат свечей."""
-    from factorminus.db import candle_ranges, table_counts
+    from factorminus.db import (
+        candle_ranges,
+        index_coverage,
+        issuer_summary,
+        quality_stats,
+        table_counts,
+    )
 
     s = _settings()
     conn = _db(s, db)
@@ -132,6 +138,21 @@ def db_stats(db: DbOpt = None) -> None:
         "WHERE w2.index_id = index_weights.index_id) GROUP BY index_id"
     ):
         typer.echo(f"Веса {idx}: {n} бумаг на {d}")
+        cov = index_coverage(conn, idx)
+        missing = ", ".join(cov["missing"]) or "нет"
+        pct = cov["coverage_pct"]
+        typer.echo(f"Покрытие весов {idx} вселенной: {pct:.1f}% (нет во вселенной: {missing})")
+    for iid, n, lo, hi in conn.execute(
+        "SELECT instrument_id, COUNT(*), MIN(date), MAX(date) FROM candles "
+        "WHERE instrument_id LIKE '%\\_INDEX' ESCAPE '\\' GROUP BY 1"
+    ):
+        typer.echo(f"Свечи индекса {iid}: {n}, {lo} … {hi}")
+    iss = issuer_summary(conn)
+    typer.echo(f"Эмитентов: {iss['issuers']}, бумаг без эмитента: {iss['without_issuer'] or 'нет'}")
+    q = quality_stats(conn)
+    typer.echo(f"Свечей выходных дней: {q['weekend_candles']}")
+    no_sector = ", ".join(q["without_sector"]) or "нет"
+    typer.echo(f"Без сектора бренда: {q['without_sector_pct']:.1f}% ({no_sector})")
 
 
 # --- mcp ---
@@ -256,8 +277,11 @@ def ingest(
     db: DbOpt = None,
     universe: Annotated[Path, typer.Option("--universe")] = UNIVERSE_PATH,
     cassettes: Annotated[Path | None, typer.Option(help="Каталог кассет")] = None,
+    index: Annotated[
+        bool, typer.Option("--index/--no-index", help="Загрузить и свечи индекса IMOEX")
+    ] = True,
 ) -> None:
-    """Загрузить вселенную из MCP в SQLite."""
+    """Загрузить вселенную из MCP в SQLite (и свечи индекса IMOEX)."""
     from datetime import date
 
     from factorminus.ingest.pipeline import run_ingest
@@ -281,11 +305,59 @@ def ingest(
             until=date.fromisoformat(until) if until else _today_msk(),
             mode=mode,
         )
+        if index and not only:
+            from factorminus.ingest.index_candles import ingest_index_candles
+
+            n = ingest_index_candles(
+                conn,
+                client,
+                "IMOEX",
+                since=date.fromisoformat(since),
+                until=date.fromisoformat(until) if until else _today_msk(),
+            )
+            typer.echo(f"Свечи индекса IMOEX: новых {n}")
     typer.echo(summary.text())
     if not only and until is None and mode == "replay":
         typer.echo("Подсказка: для replay реальных записей задайте --until датой записи.")
     if summary.errors:
         typer.echo(f"Ошибки: SELECT * FROM ingest_errors WHERE run_id={summary.run_id}")
+
+
+# --- index ---
+
+index_app = typer.Typer(no_args_is_help=True, help="Индексы")
+app.add_typer(index_app, name="index")
+
+
+@index_app.command("candles")
+@friendly_errors
+def index_candles(
+    index: Annotated[str, typer.Option("--index")] = "IMOEX",
+    since: Annotated[str, typer.Option()] = "2020-01-01",
+    until: Annotated[str | None, typer.Option()] = None,
+    mode: ModeOpt = "live",
+    db: DbOpt = None,
+) -> None:
+    """Дневные свечи индекса из MCP в `candles` (instrument_id = <INDEX>_INDEX), инкремент."""
+    from datetime import date
+
+    from factorminus.ingest.index_candles import index_instrument_id, ingest_index_candles
+
+    s = _settings()
+    conn = _db(s, db)
+    with _client(s, mode=mode) as client:
+        n = ingest_index_candles(
+            conn,
+            client,
+            index,
+            since=date.fromisoformat(since),
+            until=date.fromisoformat(until) if until else _today_msk(),
+        )
+    iid = index_instrument_id(index)
+    lo, hi, total = conn.execute(
+        "SELECT MIN(date), MAX(date), COUNT(*) FROM candles WHERE instrument_id=?", (iid,)
+    ).fetchone()
+    typer.echo(f"{iid}: новых свечей {n}, всего {total}, {lo} … {hi}")
 
 
 # --- synth ---
