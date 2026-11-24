@@ -213,6 +213,62 @@
   kind: share
   role: share
   note: 'для слоя 3: группа Газпром (ТГК-1)'
+- id: CBOM_TQBR
+  kind: share
+  role: share
+  note: банки и финансы; добавлена для 100% покрытия IMOEX
+- id: SVCB_TQBR
+  kind: share
+  role: share
+  note: банки и финансы; добавлена для 100% покрытия IMOEX
+- id: DOMRF_TQBR
+  kind: share
+  role: share
+  note: банки и финансы; добавлена для 100% покрытия IMOEX
+- id: BSPB_TQBR
+  kind: share
+  role: share
+  note: банки и финансы; добавлена для 100% покрытия IMOEX
+- id: RENI_TQBR
+  kind: share
+  role: share
+  note: банки и финансы (страхование); добавлена для 100% покрытия IMOEX
+- id: AFLT_TQBR
+  kind: share
+  role: share
+  note: транспорт; добавлена для 100% покрытия IMOEX
+- id: FLOT_TQBR
+  kind: share
+  role: share
+  note: транспорт; добавлена для 100% покрытия IMOEX
+- id: CNRU_TQBR
+  kind: share
+  role: share
+  note: технологии и интернет; добавлена для 100% покрытия IMOEX
+- id: POSI_TQBR
+  kind: share
+  role: share
+  note: технологии и интернет; добавлена для 100% покрытия IMOEX
+- id: VKCO_TQBR
+  kind: share
+  role: share
+  note: технологии и интернет; добавлена для 100% покрытия IMOEX
+- id: ENPG_TQBR
+  kind: share
+  role: share
+  note: металлы и добыча; добавлена для 100% покрытия IMOEX
+- id: UGLD_TQBR
+  kind: share
+  role: share
+  note: металлы и добыча; добавлена для 100% покрытия IMOEX
+- id: MDMG_TQBR
+  kind: share
+  role: share
+  note: здравоохранение; добавлена для 100% покрытия IMOEX
+- id: RAGR_TQBR
+  kind: share
+  role: share
+  note: сельское хозяйство; добавлена для 100% покрытия IMOEX
 - id: SU26236RMFS8_TQOB
   kind: bond
   role: ofz
@@ -240,7 +296,8 @@
 - id: RU000A105VU7_TQCB
   kind: bond
   role: corp_bond
-  note: Эталон-Финанс 002Р-01 (2038)
+  issuer: МКПАО Эталон Груп
+  note: Эталон-Финанс 002Р-01 (2038); выпущена через финансовую «дочку», эмитент риска — материнская компания
 - id: RU000A0JXQ44_TQCB
   kind: bond
   role: corp_bond
@@ -248,4 +305,5 @@
 - id: RU000A107050_TQCB
   kind: bond
   role: corp_bond
-  note: Газпром капитал БО-002Р-09 (2028), вне группы АФК
+  issuer: Газпром
+  note: Газпром капитал БО-002Р-09 (2028), вне группы АФК; выпущена через финансовую «дочку», эмитент риска — материнская компания
