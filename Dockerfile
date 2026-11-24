@@ -141,6 +141,7 @@ USER 0
 COPY --from=venv-dev /opt/venv /opt/venv
 COPY pyproject.toml /app/pyproject.toml
 COPY certs /app/certs
+COPY requirements /app/requirements
 COPY scripts /app/scripts
 COPY tests /app/tests
 COPY docs/contract /app/docs/contract
