@@ -1,0 +1,23 @@
+# pre-commit install — проверки перед каждым коммитом (те же, что в CI).
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.6
+    hooks:
+      - id: ruff
+        args: [src, tests, scripts]
+        pass_filenames: false
+      - id: ruff-format
+        args: [--check, src, tests, scripts]
+        pass_filenames: false
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+  - repo: local
+    hooks:
+      - id: repo-hygiene
+        name: repo hygiene (secrets, market data)
+        entry: python scripts/check_repo_hygiene.py
+        language: system
+        pass_filenames: false
+        always_run: true

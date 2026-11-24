@@ -2,11 +2,15 @@ import shutil
 import ssl
 
 import pytest
+
 from scripts_loader import SCRIPTS, load_script
 
 ca = load_script("build_ca_bundle")
 CERTS = SCRIPTS.parent / "certs"
-ROOT_SHA = "D2:6D:2D:02:31:B7:C3:9F:92:CC:73:85:12:BA:54:10:35:19:E4:40:5D:68:B5:BD:70:3E:97:88:CA:8E:CF:31"
+ROOT_SHA = (
+    "D2:6D:2D:02:31:B7:C3:9F:92:CC:73:85:12:BA:54:10:"
+    "35:19:E4:40:5D:68:B5:BD:70:3E:97:88:CA:8E:CF:31"
+)
 
 
 @pytest.fixture

@@ -1,0 +1,12 @@
+# gitleaks: стандартные правила + токен T-Invest.
+title = "factorminus"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "tinvest-token"
+description = "T-Invest API token (t. + 86 символов)"
+regex = '''(?:^|[^A-Za-z0-9_.-])(t\.[A-Za-z0-9_-]{80,})'''
+secretGroup = 1
+keywords = ["t."]
