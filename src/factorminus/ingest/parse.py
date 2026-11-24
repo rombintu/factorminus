@@ -115,10 +115,12 @@ def parse_brand(payload: Any) -> dict:
 
 
 def parse_candles(payload: Any) -> list[dict]:
-    """Дневные свечи; свечи без цены закрытия пропускаются."""
+    """Дневные свечи; незавершённые и без цены закрытия пропускаются."""
     items = payload.get("candles", []) if isinstance(payload, dict) else payload or []
     rows = []
     for c in items:
+        if c.get("isComplete") is False:  # незакрытая свеча дня: иначе инкремент её не обновит
+            continue
         close = to_float(c.get("close"))
         date = to_msk_date(c.get("time"))
         if close is None or date is None:

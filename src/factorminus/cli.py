@@ -220,6 +220,59 @@ def iss_weights(index: Annotated[str, typer.Option("--index")] = "IMOEX", db: Db
     typer.echo(f"{index}: {n} бумаг на {rows[0]['trade_date']}, сумма весов {total:.2f}")
 
 
+# --- ingest ---
+
+
+def _today_msk():
+    from datetime import datetime
+
+    from factorminus.ingest.parse import MSK
+
+    return datetime.now(MSK).date()
+
+
+@app.command("ingest")
+@friendly_errors
+def ingest(
+    only: Annotated[str | None, typer.Option(help="Список id через запятую")] = None,
+    since: Annotated[str, typer.Option(help="Начало свечей, YYYY-MM-DD")] = "2024-01-01",
+    until: Annotated[
+        str | None, typer.Option(help="Конец свечей (по умолчанию сегодня, МСК)")
+    ] = None,
+    mode: ModeOpt = "live",
+    db: DbOpt = None,
+    universe: Annotated[Path, typer.Option("--universe")] = UNIVERSE_PATH,
+    cassettes: Annotated[Path | None, typer.Option(help="Каталог кассет")] = None,
+) -> None:
+    """Загрузить вселенную из MCP в SQLite."""
+    from datetime import date
+
+    from factorminus.ingest.pipeline import run_ingest
+    from factorminus.ingest.universe import load_universe
+
+    entries = load_universe(universe)
+    if only:
+        wanted = {x.strip() for x in only.split(",") if x.strip()}
+        unknown = wanted - {e.id for e in entries}
+        if unknown:
+            raise ValueError(f"нет во вселенной: {', '.join(sorted(unknown))}")
+        entries = [e for e in entries if e.id in wanted]
+    s = _settings()
+    conn = _db(s, db)
+    with _client(s, mode=mode, cassette_dir=cassettes) as client:
+        summary = run_ingest(
+            conn,
+            client,
+            entries,
+            since=date.fromisoformat(since),
+            until=date.fromisoformat(until) if until else _today_msk(),
+            mode=mode,
+        )
+    typer.echo(summary.text())
+    if summary.errors:
+        typer.echo(f"Ошибки: SELECT * FROM ingest_errors WHERE run_id={summary.run_id}")
+
+
 def run() -> None:  # pragma: no cover
     try:
         app()
