@@ -436,10 +436,120 @@ ml / make docker-test-ml ML_PYTEST_ARGS=--ml-heavy
 
 `lock-check` в CI подтверждает, что `requirements/build.txt` с `setuptools>=77` перегенерировать не нужно. На раннере GitHub (16 ГБ) `preload=True` проходит с пиком 4,8 ГБ. Это сходится с `docs/DEPLOY.md`: на 4 ГБ этот режим не помещается, 8 ГБ хватает. `make lock-upgrade` по-прежнему не запускался ни локально, ни в CI.
 
+## Упрощение
+
+ТЗ: `docs/tz/STAGE_1_5_SIMPLIFY.md`. Остаётся всё, что защищает секреты, данные, воспроизводимость и корректность; удалено то, что только собирало отчёты или дублировало проверки. Поведение продукта не менялось.
+
+| Коммит | Что |
+|---|---|
+| `32e0cef` | `release.yml` только на теги `vX.Y.Z`: `guard` → `ci` → один job `image` (`linux/amd64,linux/arm64` через QEMU, binfmt по digest) → `github-release`. `_image.yml` удалён, `:main` и `:sha-…` не публикуются, ML-образ в GHCR не публикуется. compose: `ghcr.io/rombintu/factorminus:${FM_TAG:-latest}`, `fm-ml` — только `build:` и `factorminus:ml` |
+| `c2abe16` | текст релиза — `gh release create --generate-notes` со ссылками на `docs/STAGES.md` и `docs/DEPLOY.md`; удалены `scripts/release_notes.py`, тесты, цель `release-notes` |
+| `036ce78` | удалены `scripts/ci_summary.py`, тест, `scripts/timed.sh`, job `summary`, таймеры сборки, загрузка артефактов для сводки. `test` пишет в Summary итог pytest и покрытие, `docker` — вывод `check_image.sh`, `ml` — размер образа, итог и пиковую память. В `ci.yml` и `ml.yml` `shell: bash` (`-eo pipefail`), чтобы `| tee` не скрывал падение |
+| `d7208cc` | удалены тест `preload=True`, маркер и опция `ml_heavy`, хак `marker.replace` в `conftest.py`, `ML_PYTEST_ARGS`; печать пиковой памяти осталась |
+| `9492c7e` | job `audit` убран из `ci.yml`; `audit.yml` — PR с изменениями `requirements/**`, `pyproject.toml`, по понедельникам, вручную |
+| `753047b` | `DEFAULT_DB_PATH` удалён, тесты сверяют с `DATA_DIR / DB_FILENAME` |
+| `6b6a72e` | из `Makefile` удалены цели, которые никто не вызывал (`test-ml`, `ingest`, `docker-build-ml`, `clean-ci`, а с ними `ci-summary`, `release-notes`), `.PHONY` совпадает с целями; `docs/CI.md` описывает текущую схему (158 → 126 строк) |
+
+`wc -l` инфраструктуры (workflow, `Makefile`, `Dockerfile`, `compose.yaml`, `scripts/`, тесты скриптов):
+
+| Файл | До | После упрощения |
+|---|---:|---:|
+| `.github/workflows/_image.yml` | 138 | удалён |
+| `.github/workflows/ci.yml` | 211 | 142 |
+| `.github/workflows/release.yml` | 93 | 95 |
+| `.github/workflows/audit.yml` | 27 | 31 |
+| `.github/workflows/ml.yml` | 64 | 64 |
+| `Makefile` | 192 | 163 |
+| `scripts/release_notes.py` + тест | 123 + 128 | удалены |
+| `scripts/ci_summary.py` + тест | 92 + 49 | удалены |
+| `scripts/timed.sh` | 8 | удалён |
+| остальное (`Dockerfile`, `compose.yaml` +1 строка комментария, `check_*`, `build_ca_bundle.py`, тесты) | 1081 | 1082 |
+| **Итого** | **2206** | **1577** |
+
+После правок по комментариям к PR (ниже: удалены `build_ca_bundle.py` и его тест, добавлена проверка TLS в `check_image.sh`) — **1415** строк.
+
+Проверено локально после упрощения: `make ci` (с `lock-check`, PyPI снова открывался) — 322 passed, 8 skipped, покрытие 91,47%; `make docker-build docker-test docker-demo docker-check lint-docker` — exit 0, в образе 317 passed, 13 skipped, все проверки `ok`, 239 МБ; `docker compose run --rm demo` без образа в GHCR: `Head ".../manifests/latest": denied`, compose собрал образ локально и отработал (exit 0); `docker compose --profile ml build fm-ml` — `factorminus:ml` 3,58 ГБ, `fm --help` работает.
+
+## Комментарии к PR #1
+
+ТЗ: `docs/tz/STAGE_1_5_PR_REVIEW.md`. Коммиты: `a82c0ac` (TLS), `4a07f2f` (белый список), `6a98621` (песочница по умолчанию).
+
+### 1. `certs/russian_trusted_root_ca.pem`: «найти обходной путь, например http»
+
+**Сделано.** http не используется. Остался один корневой сертификат, он лежит в пакете: `src/factorminus/certs/russian_trusted_root_ca.pem` (`package-data`). `config.tls_context()` при каждом создании сверяет его SHA-256 с `ROOT_CA_SHA256`; подмена файла или не-PEM — `ConfigError`. Затем добавляет его к набору certifi (`certifi` теперь прямая зависимость, lock-файлы перегенерированы: изменилась только строка `via`). `Settings.ssl_verify()` возвращает этот контекст, при `TINVEST_INSECURE_SSL=1` — по-прежнему `False`. Удалены `scripts/build_ca_bundle.py` с тестом, стадия `ca` в `Dockerfile`, `COPY certs`, цель `ca-bundle`, `TINVEST_CA_BUNDLE` (код, compose, ENV образа, `.env.example`, документы). `check_image.sh` проверяет, что в `runtime` строится `tls_context()`. Гигиена: сертификаты и ключи (`.pem`, `.crt`, `.key` и т. п.) допускаются только по пути корневого в пакете (правило `certificate-path`); `.gitleaks.toml` правок не потребовал: путей сертификатов в нём не было. Тест на `http://` в `TINVEST_MCP_URL` → `ConfigError` уже был (`test_mcp_url_must_be_https`).
+
+**Ответ для PR:**
+> По http MCP T-Invest не работает (порт 80 не отвечает), а токен в заголовке `Authorization` по http мог бы перехватить любой в той же сети. Вместо этого упростили TLS: в пакете один публичный корневой сертификат Минцифры, его отпечаток проверяется при каждом подключении, промежуточные сертификаты серверы присылают сами. Сборки бандла и переменной `TINVEST_CA_BUNDLE` больше нет.
+
+### 2–3. `certs/russian_trusted_sub_ca_*.pem`: «удалить ключи и вычистить коммиты»
+
+**Сделано.** Оба файла удалены обычным коммитом `a82c0ac` вместе с папкой `certs/`. История не переписывалась, force-push не было. Закрытых ключей там не было: это публичные сертификаты (`BEGIN CERTIFICATE`) НУЦ Минцифры.
+
+**Ответ для PR (к обоим комментариям):**
+> Это не ключи, а публичные сертификаты промежуточных УЦ Минцифры: их раздают Госуслуги, закрытых ключей в репозитории нет. Файлы удалены коммитом `a82c0ac`: они не нужны, серверы присылают промежуточный сертификат сами. Историю не переписываем: секрета в ней нет (история проверена на токен и `PRIVATE KEY`, gitleaks в CI смотрит её целиком), а переписывание сломало бы PR и ссылки на коммиты.
+
+### 4. `mcp/allowlist.py`: «проверить все ручки по http и с токеном песочницы»
+
+**Сделано.** `READ_ONLY_TOOLS` сокращён с 16 до 9 инструментов, которые вызывает код: `invest_find_instrument`, `invest_get_share`, `invest_get_etf`, `invest_get_bond`, `invest_get_currency`, `invest_get_asset`, `invest_get_brand`, `invest_get_candles`, `invest_get_risk_rates`. В `tests/test_live.py` — `SMOKE_ARGS` и `SMOKE_FIELD`: параметризованный тест вызывает каждый инструмент и проверяет одно характерное поле (пустое — провал), ответы не печатаются и не сохраняются. Офлайн-тест в обычном CI: `set(SMOKE_ARGS) == READ_ONLY_TOOLS`. Упоминания «16» в README и `docs/CONTEXT.md` обновлены, в отчёте этапа 1 добавлена пометка. По http ничего не проверялось.
+
+`make test-live` на песочнице (`.env` не открывался; адрес из настроек — `https://sandbox-invest-public-api.tbank.ru/mcp`, токен: задан):
+
+```
+$ pytest --live -m live -v --tb=no tests/test_live.py
+tests/test_live.py::test_tool_smoke[invest_find_instrument] PASSED
+tests/test_live.py::test_tool_smoke[invest_get_asset] PASSED
+tests/test_live.py::test_tool_smoke[invest_get_bond] PASSED
+tests/test_live.py::test_tool_smoke[invest_get_brand] PASSED
+tests/test_live.py::test_tool_smoke[invest_get_candles] PASSED
+tests/test_live.py::test_tool_smoke[invest_get_currency] PASSED
+tests/test_live.py::test_tool_smoke[invest_get_etf] PASSED
+tests/test_live.py::test_tool_smoke[invest_get_risk_rates] PASSED
+tests/test_live.py::test_tool_smoke[invest_get_share] PASSED
+tests/test_live.py::test_card_asset_brand_candles[SBER_TQBR] PASSED
+tests/test_live.py::test_card_asset_brand_candles[TMOS_TQBR] PASSED
+tests/test_live.py::test_card_asset_brand_candles[SU26238RMFS4_TQOB] PASSED
+tests/test_live.py::test_iss_imoex_weights PASSED
+tests/test_live.py::test_same_issuer_different_brand_live[SBER-SBERP] PASSED
+tests/test_live.py::test_same_issuer_different_brand_live[MTSS-bond] PASSED
+tests/test_live.py::test_imoex_index_candles_live PASSED
+16 passed in 12.74s
+
+$ make test-live
+16 passed, 325 deselected in 13.41s
+```
+
+ISS (`test_iss_imoex_weights`) прошёл через `tls_context()` с одним корневым сертификатом. `invest_get_risk_rates` на песочнице вернул непустые ставки, хотя документация пишет, что ставки риска там «не рассчитываются».
+
+**Решение по `DEFAULT_MCP_URL`:** все 9 инструментов прошли, поэтому `DEFAULT_MCP_URL` и `.env.example` переключены на песочницу (`https://sandbox-invest-public-api.tbank.ru/mcp`, тест `test_default_mcp_url_is_sandbox`). `docs/DEPLOY.md`: «для сбора данных нужен токен песочницы, боевой не нужен», где его выпустить и про 7 дней; запасной вариант — боевой адрес и токен «Только чтение».
+
+**Ответ для PR:**
+> Проверили на песочнице, по http — нет (по http MCP не работает, а токен ушёл бы открытым текстом). Белый список сократили до 9 инструментов, которые реально вызывает код; на каждый есть live-тест, и офлайн-тест в CI не даст добавить инструмент без такой проверки. Все 9 на песочнице проходят, поэтому адрес по умолчанию теперь песочница, а для сбора данных нужен только токен песочницы.
+
+### Как проверено
+
+```
+$ make ci
+All checks passed!
+46 files already formatted
+Гигиена: ок, проверено файлов: 99
+lock-файлы соответствуют pyproject.toml
+base.txt и dev.txt: общие пакеты закреплены одинаково
+base.txt и ml.txt: общие пакеты закреплены одинаково
+dev.txt и ml.txt: общие пакеты закреплены одинаково
+схема в docs/contract совпадает с кодом
+Required test coverage of 89% reached. Total coverage: 91.55%
+325 passed, 17 skipped in 7.89s
+
+$ make lint-docker
+(actionlint и hadolint без замечаний, exit 0)
+```
+
+**Не проверено локально:** `make docker-build docker-test docker-demo docker-check` после TLS-правок. После добавления `certifi` в `dependencies` в `base.txt` изменилась строка `via`, и слой зависимостей образа пересобирается, а из контейнеров Docker Desktop TLS-рукопожатие с PyPI не проходило больше 45 минут (`_ssl.c: The handshake operation timed out`; с хоста PyPI отвечал, `make ci` с `lock-check` прошёл). Сборку образа, тесты в нём, демо и `check_image.sh` с новой проверкой `tls_context()` выполняет job `docker` в CI на PR #1.
+
 ## Открытые вопросы
 
-1. **PR.** По решению пользователя коммиты этапа 1.5 добавлены в PR #1 (ветка `stage-1`, fast-forward), отдельного PR нет. Публикацию `:main` в GHCR можно проверить только после merge.
+1. **PR.** По решению пользователя коммиты этапа 1.5 добавлены в PR #1 (ветка `stage-1`, fast-forward), отдельного PR нет. Публикацию образа в GHCR можно проверить только после merge и тега `v0.1.5` (на push в `main` образы больше не публикуются).
 2. **`ml.yml` на PR запускается при каждом push:** фильтр `paths` для `pull_request` сравнивает весь diff PR с базой, а в нём есть `Dockerfile`; новый push отменяет предыдущий прогон (около 16 минут). На следующих этапах, когда `Dockerfile` не меняется, `ml` будет запускаться только по расписанию и вручную.
 3. **Защита `main` и видимость пакета GHCR** — настройки репозитория, инструкция и команда в `docs/CI.md`, не применялись.
-4. **laya в Docker на Mac:** закрыто правками по ревью 1.5 (п. 3). Ленивый `Router()` проходит на 3,8 ГБ (пик 1,9–2,6 ГБ); `Router(preload=True)` на 3,8 ГБ по-прежнему падает по OOM и проверяется только в CI (`ml_heavy`).
+4. **laya в Docker на Mac:** закрыто правками по ревью 1.5 (п. 3). Ленивый `Router()` проходит на 3,8 ГБ (пик 1,9–2,6 ГБ). Тест `preload=True` удалён при упрощении: в проекте этот путь не используется.
 5. **`docs/tz/STAGE_2.md`** не закоммичен: он не относится к этапу 1.5.
