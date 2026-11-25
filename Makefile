@@ -5,7 +5,6 @@ FM ?= $(if $(wildcard .venv/bin/fm),.venv/bin/fm,fm)
 IMAGE ?= factorminus
 TAG ?= local
 BUILD := build
-CI_DIR := $(BUILD)/ci
 # Порог покрытия: замер этапа 1.5 минус 2 п.п. Только растёт.
 COV_MIN ?= 89
 UV_COMPILE = $(PY) -m uv pip compile pyproject.toml --python-version 3.12 --universal \
@@ -21,7 +20,7 @@ DOCKER_BUILD = docker buildx build --load $(DOCKER_BUILD_ARGS)
 SHELL := /bin/bash
 
 .PHONY: install install-deps lint lint-docker test test-cov test-live test-ml hygiene gitleaks \
-	audit lock lock-upgrade lock-check contract-check ci ci-summary release-guard ca-bundle \
+	audit lock lock-upgrade lock-check contract-check ci release-guard ca-bundle \
 	ingest synth \
 	docker-build docker-build-ml docker-build-test docker-test docker-test-run docker-test-ml \
 	docker-build-test-ml docker-test-ml-run \
@@ -65,8 +64,7 @@ test-ml:
 	$(PY) -m pytest -q --ml -m ml
 
 hygiene:
-	@mkdir -p $(CI_DIR)
-	$(PY) scripts/check_repo_hygiene.py --summary $(CI_DIR)/20-hygiene.md
+	$(PY) scripts/check_repo_hygiene.py
 
 # Вся история git (в CI checkout с fetch-depth: 0)
 gitleaks:
@@ -123,9 +121,6 @@ contract-check:
 # То же, что CI, кроме docker и gitleaks: быстрая проверка перед пушем.
 ci: lint hygiene lock-check contract-check test-cov
 
-ci-summary:
-	$(PY) scripts/ci_summary.py --build $(BUILD)
-
 # Перед публикацией по тегу: формат vX.Y.Z и коммит уже в origin/main
 release-guard:
 	@[[ "$$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$$ ]] \
@@ -145,12 +140,10 @@ synth:
 	$(FM) synth load
 
 docker-build:
-	@mkdir -p $(CI_DIR)
-	scripts/timed.sh $(CI_DIR)/build-runtime.txt $(DOCKER_BUILD) --target runtime -t $(IMAGE):$(TAG) .
+	$(DOCKER_BUILD) --target runtime -t $(IMAGE):$(TAG) .
 
 docker-build-ml:
-	@mkdir -p $(CI_DIR)
-	scripts/timed.sh $(CI_DIR)/build-runtime-ml.txt $(DOCKER_BUILD) --target runtime-ml -t $(IMAGE):$(TAG)-ml .
+	$(DOCKER_BUILD) --target runtime-ml -t $(IMAGE):$(TAG)-ml .
 
 docker-build-test:
 	$(DOCKER_BUILD) --target test -t $(IMAGE):test .
@@ -180,8 +173,7 @@ docker-demo:
 	FM_IMAGE=$(IMAGE):$(TAG) docker compose run --rm demo
 
 docker-check:
-	@mkdir -p $(CI_DIR)
-	scripts/check_image.sh $(IMAGE):$(TAG) $(CI_DIR)/40-image.md
+	scripts/check_image.sh $(IMAGE):$(TAG)
 
 clean-ci:
 	rm -rf $(BUILD)

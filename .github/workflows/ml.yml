@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash # -eo pipefail: падение до `| tee` не теряется
+
 concurrency:
   group: ml-${{ github.ref }}
   cancel-in-progress: true
@@ -37,8 +41,6 @@ jobs:
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           driver-opts: image=moby/buildkit:v0.35.1@sha256:baf6138eb8c37644800c7c913fba051e840ebb9ba13eaf92d92ef9a1712d0b4c
-      - name: start build timer
-        run: mkdir -p build/ci && date +%s > build/ci/.t0
       - name: build runtime-ml
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -48,17 +50,15 @@ jobs:
           tags: factorminus:ci-ml
           cache-from: type=gha,scope=runtime-ml
           cache-to: type=gha,mode=max,scope=runtime-ml
-      - name: stop build timer
-        run: echo $(( $(date +%s) - $(cat build/ci/.t0) )) > build/ci/build-runtime-ml.txt && rm build/ci/.t0
       # ленивый Router() и, раз памяти на раннере хватает, preload=True (ml_heavy)
-      - run: make docker-test-ml ML_PYTEST_ARGS=--ml-heavy 2>&1 | tee build/ci/ml.log
+      - run: mkdir -p build && make docker-test-ml ML_PYTEST_ARGS=--ml-heavy 2>&1 | tee build/ml.log
       - name: summary
+        if: always()
         run: |
           {
             echo "## ML smoke"
             echo
             echo "Размер runtime-ml: $(( $(docker image inspect -f '{{.Size}}' factorminus:ci-ml) / 1024 / 1024 )) МБ"
-            echo "Сборка: $(cat build/ci/build-runtime-ml.txt) с"
-            grep -E 'passed|failed' build/ci/ml.log | tail -1
-            grep 'Пиковая память' build/ci/ml.log || true
+            grep -E 'passed|failed' build/ml.log | tail -1
+            grep 'Пиковая память' build/ml.log || true
           } >> "$GITHUB_STEP_SUMMARY"
