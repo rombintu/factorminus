@@ -1,9 +1,13 @@
-# Аудит закреплённых версий (pip-audit по base, dev, ml) раз в неделю: новые уязвимости
-# видны без PR. В ci.yml тот же `make audit` идёт на каждом PR и merge не блокирует.
+# Аудит закреплённых версий (pip-audit по base, dev, ml): на PR, меняющих зависимости,
+# и раз в неделю, чтобы новые уязвимости были видны без PR. Исключения с причиной:
+# .github/pip-audit-ignore.txt. Merge не блокирует (не входит в обязательные проверки).
 name: audit
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths: ["requirements/**", "pyproject.toml"]
   schedule:
     - cron: "0 4 * * 1" # понедельник, 04:00 UTC
 
