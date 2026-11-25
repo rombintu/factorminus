@@ -20,7 +20,7 @@ DOCKER_BUILD = docker buildx build --load $(DOCKER_BUILD_ARGS)
 SHELL := /bin/bash
 
 .PHONY: install install-deps lint lint-docker test test-cov test-live hygiene gitleaks \
-	audit lock lock-upgrade lock-check contract-check ci release-guard ca-bundle synth \
+	audit lock lock-upgrade lock-check contract-check ci release-guard synth \
 	docker-build docker-build-test docker-test docker-test-run \
 	docker-build-test-ml docker-test-ml-run docker-test-ml docker-demo docker-check
 
@@ -123,9 +123,6 @@ release-guard:
 	@git merge-base --is-ancestor HEAD origin/main \
 		|| { echo "коммит тега не входит в main: публикация отменена"; exit 1; }
 	@echo "тег $$RELEASE_TAG на коммите из main"
-
-ca-bundle:
-	$(PY) scripts/build_ca_bundle.py --out data/ca/ru-bundle.pem
 
 synth:
 	$(FM) synth generate --seed 42 --out tests/fixtures/synthetic

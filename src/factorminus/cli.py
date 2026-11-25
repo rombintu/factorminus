@@ -167,7 +167,7 @@ def mcp_check() -> None:
     s = _settings()
     typer.echo(f"MCP: {s.mcp_url}")
     typer.echo(f"Токен: {s.token_status}")
-    typer.echo(f"TLS: {'CA-бандл ' + s.ca_bundle if s.ca_bundle else 'системные сертификаты'}")
+    typer.echo("TLS: certifi + Russian Trusted Root CA из пакета")
     with _client(s) as client:
         tools = client.list_tools()
     typer.echo(f"Рукопожатие: ок, инструментов на сервере: {len(tools)}")

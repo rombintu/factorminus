@@ -41,7 +41,6 @@ def test_fake_token_shape():
         "x.sqlite-journal",
         "data/ingest.log",
         "data/cassettes/a/b.json",
-        "data/ca/ru-bundle.pem",
         "data/universe_resolved.json",
     ],
 )
@@ -211,6 +210,19 @@ def test_mcp_keys_allowed_in_code_and_synthetic(universe):
             "docs/contract/examples/n.json": '{"data_as_of": {"candles": "2025-12-01"}}',
         },
     )
+    assert hy.check(universe, files + ["data/universe.yaml"]) == []
+
+
+@pytest.mark.parametrize(
+    "path", ["certs/russian_trusted_sub_ca_2029.pem", "src/factorminus/certs/extra.pem", "x.crt"]
+)
+def test_certificate_outside_package_path_caught(universe, path):
+    files = make(universe, {path: "-----BEGIN CERTIFICATE-----\n"}) + ["data/universe.yaml"]
+    assert (path, "certificate-path") in rules(hy.check(universe, files))
+
+
+def test_package_root_ca_allowed(universe):
+    files = make(universe, {hy.ROOT_CA_PATH: "-----BEGIN CERTIFICATE-----\n"})
     assert hy.check(universe, files + ["data/universe.yaml"]) == []
 
 

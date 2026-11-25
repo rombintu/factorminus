@@ -19,6 +19,7 @@ certifi==2026.11.20 \
     --hash=sha256:7422df25243767b9877031a2248cb14d09ddac9beee846f4cef3d5c9191d488f \
     --hash=sha256:af1cb240a8133f105aa52684a3a3258339d7f2fd0bd4e2812698ff5cf5588c4e
     # via
+    #   factorminus (pyproject.toml)
     #   httpcore
     #   httpx
 cffi==2.1.1 ; platform_python_implementation != 'PyPy' \

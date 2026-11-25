@@ -1,6 +1,7 @@
 #!/bin/sh
 # check_image.sh IMAGE [SUMMARY.md] — проверки образа (ТЗ 1.5.4):
 #   нет /app/.env и *.sqlite; процесс не root; в docker history нет TINVEST_TOKEN=<значение>;
+#   TLS-контекст строится из PEM в пакете;
 #   `fm mcp check` без токена — понятная ошибка конфигурации (код 2), без трейсбека.
 set -eu
 image=$1
@@ -52,7 +53,15 @@ else
   ok "TINVEST_TOKEN нет в docker history и ENV"
 fi
 
-# 4. Без токена — понятная ошибка конфигурации
+# 4. Корневой сертификат Минцифры попал в колесо: TLS-контекст строится, отпечаток совпадает
+if docker run --rm --network none --entrypoint python "$image" \
+  -c "from factorminus.config import tls_context; tls_context()" >/dev/null 2>&1; then
+  ok "tls_context() строится (certifi + Russian Trusted Root CA из пакета)"
+else
+  bad "tls_context() не строится: нет PEM в пакете или отпечаток не совпадает"
+fi
+
+# 5. Без токена — понятная ошибка конфигурации
 set +e
 out=$(docker run --rm --network none "$image" mcp check 2>&1)
 code=$?

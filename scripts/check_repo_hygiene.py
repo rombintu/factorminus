@@ -55,7 +55,6 @@ FORBIDDEN = [
     "*.sqlite3",
     "*.log",
     "data/cassettes/*",
-    "data/ca/*",
     "data/universe_resolved.json",
 ]
 # Токен T-Invest: «t.» и 86 символов [A-Za-z0-9_-]. Порог 80 с запасом; «t.***» и короткие
@@ -69,6 +68,9 @@ MCP_KEY_RE = re.compile(
     r'"(instrumentUid|assetUid|positionUid|figi|brandUid)"\s*:\s*+(?!"syn|null\b)', re.I
 )
 CODE_SUFFIXES = {".py", ".md"}
+# Сертификаты и ключи: в git только корневой сертификат Минцифры в пакете
+CERT_SUFFIXES = {".pem", ".crt", ".cer", ".der", ".p12", ".pfx", ".key"}
+ROOT_CA_PATH = "src/factorminus/certs/russian_trusted_root_ca.pem"
 
 
 @dataclass(frozen=True)
@@ -148,6 +150,8 @@ def check(root: Path, files: list[str]) -> list[Violation]:
             line = text.count("\n", 0, m.start()) + 1
             out.append(Violation(path, "token", f"строка {line}: похоже на токен T-Invest"))
         suffix = PurePosixPath(path).suffix.lower()
+        if suffix in CERT_SUFFIXES and path != ROOT_CA_PATH:
+            out.append(Violation(path, "certificate-path", f"сертификат только {ROOT_CA_PATH}"))
         if suffix in DATA_EXTS and not _in_data_dir(path) and path not in DATA_FILE_EXCEPTIONS:
             out.append(
                 Violation(

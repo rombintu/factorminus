@@ -3,7 +3,7 @@
 Безопасность:
 - инструмент проверяется по белому списку до любого сетевого запроса;
 - токен живёт только в заголовке `Authorization` и не попадает в логи и repr;
-- TLS проверяется всегда (`TINVEST_CA_BUNDLE` для российского УЦ).
+- TLS проверяется всегда (`config.tls_context()`: certifi + Russian Trusted Root CA).
 """
 
 from __future__ import annotations

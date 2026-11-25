@@ -1,19 +1,29 @@
-"""Конфигурация из окружения и `.env`. Секреты в repr и логах маскируются."""
+"""Конфигурация из окружения и `.env`. Секреты в repr и логах маскируются.
+
+TLS: certifi + `certs/russian_trusted_root_ca.pem` из пакета — Russian Trusted Root CA
+НУЦ Минцифры (источник: Госуслуги, SHA-256 `ROOT_CA_SHA256`, действует до 27.02.2032).
+"""
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import ssl
 import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from importlib.resources import files
 from pathlib import Path
 from urllib.parse import urlparse
+
+import certifi
 
 DEFAULT_MCP_URL = "https://invest-public-api.tbank.ru/mcp"
 DB_FILENAME = "fm.sqlite"
 ALLOWED_MCP_HOST_SUFFIX = "tbank.ru"
+# Серверы T-Invest и ISS присылают цепочку до Sub CA сами: в пакете нужен только корневой.
+ROOT_CA_SHA256 = "d26d2d0231b7c39f92cc738512ba54103519e4405d68b5bd703e9788ca8ecf31"
 _TOKEN_RE = re.compile(r"^[\x21-\x7e]+$")
 
 
@@ -97,7 +107,6 @@ def _read_dotenv(path: Path) -> dict[str, str]:
 class Settings:
     token: str | None = field(repr=False)
     mcp_url: str = DEFAULT_MCP_URL
-    ca_bundle: str | None = None
     insecure_ssl: bool = False
     db_path: Path = DATA_DIR / DB_FILENAME
     data_dir: Path = DATA_DIR
@@ -105,7 +114,7 @@ class Settings:
     def __repr__(self) -> str:
         return (
             f"Settings(token={mask_secret(self.token)}, mcp_url={self.mcp_url!r}, "
-            f"ca_bundle={self.ca_bundle!r}, insecure_ssl={self.insecure_ssl}, "
+            f"insecure_ssl={self.insecure_ssl}, "
             f"db_path={str(self.db_path)!r}, data_dir={str(self.data_dir)!r})"
         )
 
@@ -124,8 +133,8 @@ class Settings:
             )
         return self.token
 
-    def verify(self) -> bool | str:
-        """Значение для `httpx.Client(verify=...)`."""
+    def ssl_verify(self) -> ssl.SSLContext | bool:
+        """Значение для `httpx.Client(verify=...)`: `tls_context()` или False при отладке."""
         if self.insecure_ssl:
             if os.environ.get("PYTEST_CURRENT_TEST") or "pytest" in sys.modules:
                 raise ConfigError("TINVEST_INSECURE_SSL=1 запрещён в тестах")
@@ -135,16 +144,21 @@ class Settings:
                 file=sys.stderr,
             )
             return False
-        return self.ca_bundle or True
+        return tls_context()
 
-    def ssl_verify(self) -> ssl.SSLContext | bool:
-        """Значение для `httpx.Client(verify=...)`: контекст с CA-бандлом или системный."""
-        verify = self.verify()
-        if isinstance(verify, str):
-            if not Path(verify).is_file():
-                raise ConfigError(f"TINVEST_CA_BUNDLE: файл не найден: {verify}")
-            return ssl.create_default_context(cafile=verify)
-        return verify
+
+def tls_context() -> ssl.SSLContext:
+    """certifi + корневой сертификат Минцифры из пакета; подмена файла — ConfigError."""
+    pem = (files("factorminus") / "certs/russian_trusted_root_ca.pem").read_text("ascii")
+    try:
+        der = ssl.PEM_cert_to_DER_cert(pem)
+    except ValueError as e:
+        raise ConfigError("Russian Trusted Root CA: файл в пакете не PEM-сертификат") from e
+    if hashlib.sha256(der).hexdigest() != ROOT_CA_SHA256:
+        raise ConfigError("Russian Trusted Root CA: отпечаток не совпадает, файл подменён")
+    ctx = ssl.create_default_context(cafile=certifi.where())
+    ctx.load_verify_locations(cadata=pem)
+    return ctx
 
 
 def _check_mcp_url(url: str) -> str:
@@ -160,16 +174,10 @@ def _check_mcp_url(url: str) -> str:
     return url
 
 
-def _resolve(path: str | None, root: Path) -> str | None:
-    if path is None or Path(path).is_absolute():
-        return path
-    return str(root / path)
-
-
 def load_settings(env: Mapping[str, str] | None = None, env_file: Path | None = None) -> Settings:
     env = os.environ if env is None else env
     # Корень — из того же env (FM_HOME), что и остальные переменные: от него считаются .env,
-    # FM_DATA_DIR, относительные FM_DB_PATH и TINVEST_CA_BUNDLE.
+    # FM_DATA_DIR и относительный FM_DB_PATH.
     root = repo_root(env)
     dotenv = _read_dotenv(env_file if env_file is not None else root / ".env")
 
@@ -189,7 +197,6 @@ def load_settings(env: Mapping[str, str] | None = None, env_file: Path | None = 
     return Settings(
         token=get("TINVEST_TOKEN"),
         mcp_url=_check_mcp_url(get("TINVEST_MCP_URL") or DEFAULT_MCP_URL),
-        ca_bundle=_resolve(get("TINVEST_CA_BUNDLE"), root),
         insecure_ssl=get("TINVEST_INSECURE_SSL") == "1",
         db_path=db_path,
         data_dir=rw,

@@ -34,14 +34,7 @@ TINVEST_TOKEN=t.ваш_токен
 
 Файл `.env` в `.gitignore`. Образец лежит в `.env.example`. Переменная окружения важнее `.env`. CLI токен не печатает.
 
-Сертификаты `invest-public-api.tbank.ru` и `iss.moex.com` выпущены российским УЦ (Russian Trusted Root CA). Публичные сертификаты Минцифры лежат в `certs/`: SHA-256 корневого сверен с Госуслугами, промежуточные подписаны им; отпечатки всех трёх зашиты в `scripts/build_ca_bundle.py`. Если появляется ошибка `CERTIFICATE_VERIFY_FAILED`, соберите бандл (certifi + `certs/`) и укажите путь к нему:
-
-```bash
-make ca-bundle                                   # пишет data/ca/ru-bundle.pem, подмена сертификата — ошибка
-echo 'TINVEST_CA_BUNDLE=data/ca/ru-bundle.pem' >> .env
-```
-
-В Docker-образе бандл собирается при сборке и подключён по умолчанию.
+Сертификаты `invest-public-api.tbank.ru` и `iss.moex.com` выпущены российским УЦ. Серверы присылают цепочку до промежуточного сертификата сами, поэтому в пакете лежит только корневой Russian Trusted Root CA Минцифры (`src/factorminus/certs/`, SHA-256 сверен с Госуслугами). `config.tls_context()` проверяет его отпечаток и добавляет к набору certifi; это работает и локально, и в Docker без настройки.
 
 `TINVEST_INSECURE_SSL=1` отключает проверку сертификата. Он нужен только для локальной отладки и запрещён в тестах.
 

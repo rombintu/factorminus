@@ -46,12 +46,6 @@ COPY pyproject.toml README.md LICENSE /src/
 COPY src /src/src
 RUN pip wheel --no-deps --no-build-isolation --wheel-dir /wheels /src
 
-# --- CA-бандл: certifi + certs/*.pem со сверкой отпечатков (ошибка при подмене) ---
-FROM venv-base AS ca
-COPY certs /src/certs
-COPY scripts/build_ca_bundle.py /src/scripts/build_ca_bundle.py
-RUN python /src/scripts/build_ca_bundle.py --certs /src/certs --out /opt/factorminus/ca/ru-bundle.pem
-
 # --- веса laya: скачиваются при сборке, холодный старт не ходит в сеть ---
 FROM venv-ml AS laya-weights
 # Все три чекпойнта (english, multilingual, typed-decisions) — подпапки одного репозитория
@@ -69,7 +63,6 @@ RUN chmod -R a+rX,go-w /opt/hf
 FROM scratch AS app-files
 COPY data/*.yaml /app/data/
 COPY tests/fixtures/synthetic /app/tests/fixtures/synthetic
-COPY --from=ca /opt/factorminus/ca /opt/factorminus/ca
 
 # --- runtime ---
 FROM base AS runtime
@@ -84,7 +77,6 @@ LABEL org.opencontainers.image.title="factorminus" \
 ENV PIP_NO_CACHE_DIR=1 \
     FM_HOME=/app \
     FM_DATA_DIR=/var/lib/factorminus \
-    TINVEST_CA_BUNDLE=/opt/factorminus/ca/ru-bundle.pem \
     XDG_CACHE_HOME=/tmp/.cache
 RUN groupadd --system --gid 10001 fm \
     && useradd --system --uid 10001 --gid fm --no-create-home --home-dir /nonexistent \
@@ -92,7 +84,6 @@ RUN groupadd --system --gid 10001 fm \
     && install -d -o 10001 -g 10001 -m 0750 /var/lib/factorminus
 COPY --from=venv-base /opt/venv /opt/venv
 COPY --from=app-files /app /app
-COPY --from=app-files /opt/factorminus /opt/factorminus
 RUN --mount=type=bind,from=wheel,source=/wheels,target=/wheels \
     pip install --no-deps --no-index /wheels/*.whl
 USER 10001:10001
@@ -113,7 +104,6 @@ ARG LAYA_REVISION=fd4f9dbcf4fde222fd43174bdd4c3b08b789e4e1
 ENV PIP_NO_CACHE_DIR=1 \
     FM_HOME=/app \
     FM_DATA_DIR=/var/lib/factorminus \
-    TINVEST_CA_BUNDLE=/opt/factorminus/ca/ru-bundle.pem \
     XDG_CACHE_HOME=/tmp/.cache \
     HF_HOME=/opt/hf \
     HF_HUB_OFFLINE=1 \
@@ -126,7 +116,6 @@ RUN groupadd --system --gid 10001 fm \
 COPY --from=venv-ml /opt/venv /opt/venv
 COPY --from=laya-weights /opt/hf /opt/hf
 COPY --from=app-files /app /app
-COPY --from=app-files /opt/factorminus /opt/factorminus
 RUN --mount=type=bind,from=wheel,source=/wheels,target=/wheels \
     pip install --no-deps --no-index /wheels/*.whl
 USER 10001:10001
@@ -139,7 +128,6 @@ USER 0
 # venv-dev содержит те же закреплённые версии base плюс dev; factorminus из runtime остаётся
 COPY --from=venv-dev /opt/venv /opt/venv
 COPY pyproject.toml /app/pyproject.toml
-COPY certs /app/certs
 COPY requirements /app/requirements
 COPY scripts /app/scripts
 COPY tests /app/tests

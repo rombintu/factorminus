@@ -20,7 +20,6 @@ x-fm: &fm
     FM_HOME: /app
     FM_DATA_DIR: /var/lib/factorminus
     FM_DB_PATH: /var/lib/factorminus/fm.sqlite
-    TINVEST_CA_BUNDLE: /opt/factorminus/ca/ru-bundle.pem
     # отключение проверки TLS из .env в контейнере не действует
     TINVEST_INSECURE_SSL: "0"
   read_only: true

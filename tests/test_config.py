@@ -1,3 +1,4 @@
+import ssl
 from pathlib import Path
 
 import pytest
@@ -6,10 +7,12 @@ from factorminus.config import (
     DATA_DIR,
     DB_FILENAME,
     DEFAULT_MCP_URL,
+    ROOT_CA_SHA256,
     ConfigError,
     Settings,
     load_settings,
     mask_secret,
+    tls_context,
 )
 
 
@@ -73,17 +76,52 @@ def test_mask_secret():
     assert mask_secret(None) == "<не задан>"
 
 
-def test_verify_default_and_ca_bundle(tmp_path):
-    assert load_settings(env={}, env_file=tmp_path / "x").verify() is True
-    s = load_settings(env={"TINVEST_CA_BUNDLE": "/tmp/ca.pem"}, env_file=tmp_path / "x")
-    assert s.verify() == "/tmp/ca.pem"
+def _ca_names(ctx: ssl.SSLContext) -> set[str]:
+    return {dict(x[0] for x in c["subject"]).get("commonName") for c in ctx.get_ca_certs()}
+
+
+def test_tls_context_from_package_pem():
+    ctx = tls_context()
+    assert ctx.verify_mode == ssl.CERT_REQUIRED and ctx.check_hostname
+    assert "Russian Trusted Root CA" in _ca_names(ctx)
+    assert len(ctx.get_ca_certs()) > 100  # certifi + корневой Минцифры
+
+
+def _other_cert() -> str:
+    import certifi
+
+    text = certifi.contents()
+    start = text.index("-----BEGIN CERTIFICATE-----")
+    end = text.index("-----END CERTIFICATE-----", start) + len("-----END CERTIFICATE-----")
+    return text[start:end] + "\n"
+
+
+@pytest.mark.parametrize("pem", [_other_cert(), "not a certificate\n"])
+def test_tls_context_substituted_pem_refused(tmp_path, monkeypatch, pem):
+    from factorminus import config
+
+    (tmp_path / "certs").mkdir()
+    (tmp_path / "certs" / "russian_trusted_root_ca.pem").write_text(pem, encoding="ascii")
+    monkeypatch.setattr(config, "files", lambda _pkg: tmp_path)
+    with pytest.raises(ConfigError, match="Russian Trusted Root CA"):
+        tls_context()
+
+
+def test_root_ca_sha256_pinned():
+    assert ROOT_CA_SHA256 == "d26d2d0231b7c39f92cc738512ba54103519e4405d68b5bd703e9788ca8ecf31"
+
+
+def test_ssl_verify_default_is_tls_context(tmp_path):
+    verify = load_settings(env={}, env_file=tmp_path / "x").ssl_verify()
+    assert isinstance(verify, ssl.SSLContext)
+    assert "Russian Trusted Root CA" in _ca_names(verify)
 
 
 def test_insecure_forbidden_under_pytest(tmp_path):
     s = load_settings(env={"TINVEST_INSECURE_SSL": "1"}, env_file=tmp_path / "x")
     assert s.insecure_ssl is True
     with pytest.raises(ConfigError, match="TINVEST_INSECURE_SSL"):
-        s.verify()
+        s.ssl_verify()
 
 
 def test_db_path_override(tmp_path):
@@ -120,22 +158,7 @@ def test_insecure_refused_even_without_pytest_env(tmp_path, monkeypatch):
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
     s = load_settings(env={"TINVEST_INSECURE_SSL": "1"}, env_file=tmp_path / "x")
     with pytest.raises(ConfigError):
-        s.verify()
-
-
-def test_ca_bundle_must_exist(tmp_path):
-    s = load_settings(
-        env={"TINVEST_CA_BUNDLE": str(tmp_path / "missing.pem")}, env_file=tmp_path / "x"
-    )
-    with pytest.raises(ConfigError, match="TINVEST_CA_BUNDLE"):
         s.ssl_verify()
-
-
-def test_relative_ca_bundle_resolved_from_repo_root(tmp_path):
-    from factorminus.config import REPO_ROOT
-
-    s = load_settings(env={"TINVEST_CA_BUNDLE": "data/ca/x.pem"}, env_file=tmp_path / "x")
-    assert s.ca_bundle == str(REPO_ROOT / "data/ca/x.pem")
 
 
 # --- FM_HOME / FM_DATA_DIR ---
@@ -231,12 +254,10 @@ def test_load_settings_uses_fm_home_from_env(tmp_path):
             "FM_HOME": str(home),
             "FM_DATA_DIR": "rw",
             "FM_DB_PATH": "db/x.sqlite",
-            "TINVEST_CA_BUNDLE": "certs/ca.pem",
         }
     )
     assert s.data_dir == home / "rw"
     assert s.db_path == home / "db" / "x.sqlite"
-    assert s.ca_bundle == str(home / "certs" / "ca.pem")
 
 
 def test_settings_defaults_follow_data_dir():
