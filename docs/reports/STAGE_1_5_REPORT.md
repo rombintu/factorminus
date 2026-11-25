@@ -283,10 +283,140 @@ No known vulnerabilities found       (×3)
   - сверка версий `dev.txt` и `ml.txt`.
   - Не исправлялось: `make ci` без сети (описано в `docs/CI.md`); пропуск удалённых в рабочей копии файлов в гигиене (в CI checkout чистый).
 
+## Правки по ревью 1.5
+
+По `docs/tz/STAGE_1_5_FIXES.md` (ревью 25.11.2026). Коммиты в `stage-1`, каждый пункт отдельно, тесты сначала красные, потом зелёные.
+
+| № | Пункт | Коммит |
+|---|---|---|
+| 1 | гигиена: файлы данных вне разрешённых папок, тикеры во всех папках с данными, ответы MCP | `7a445a1` |
+| 2 | один релиз `v0.1.5` для этапов 1 и 1.5, merge-коммит | `d2fbfc4` |
+| 3 | ML smoke на ленивом `Router()`, пиковая память | `f66a00a` |
+| 4 | `lock-check` по всем парам `base`/`dev`/`ml` | `4267fee` |
+| 5 | литеральный `FROM`, `pip` убран из Dependabot, `make lock-upgrade`, `audit.yml` | `09ed57f` |
+| 6 | пути: `FM_HOME` из переданного `env`, умолчания `Settings`, `.env.example` | `3334047` |
+| 7 | SPDX-лицензия, заметки о локальной сборке в `DEPLOY.md`, строка 1.5 в `STAGES.md` | `9b38054`, `d2fbfc4` |
+
+### 1. Гигиена
+
+- Файлы с расширениями `csv`, `tsv`, `json`, `jsonl`, `parquet`, `feather`, `xlsx`, `pkl`, `pickle`, `npz`, `npy`, `db` разрешены только в `tests/fixtures/synthetic/`, `tests/cases/`, `docs/contract/`. В остальных местах это нарушение `data-file-outside-allowlist`; исключения — словарь `DATA_FILE_EXCEPTIONS` с причиной (пока пуст).
+- Реальные тикеры (`REAL_ID_RE` и тикеры из `universe.yaml`) проверяются во всех трёх папках и в `tests/fixtures/` (правило `real-ticker-in-data`). В список исключений с причиной добавлены две JSON Schema контракта: в них `TMOS_TQBR` — пример формата `InstrumentId` из `contracts.py`, цен нет.
+- Ответы MCP (`mcp-response`): в файлах, кроме `.py` и `.md`, ключи `instrumentUid`, `assetUid`, `positionUid`, `figi`, `brandUid` и пара `candles` + `close`. Синтетика повторяет форму ответа MCP (`instruments.json`), поэтому значение, начинающееся с `syn`, и `null` (кейс «нет бренда») нарушением не считаются.
+
+Три пропущенных случая из ревью в одноразовом клоне репозитория (файлы добавлены в индекс, `scripts/check_repo_hygiene.py --root .`):
+
+```
+analysis/candles.csv: [data-file-outside-allowlist] файлы данных только в tests/fixtures/synthetic/, tests/cases/, docs/contract/
+docs/real_prices.csv: [data-file-outside-allowlist] файлы данных только в tests/fixtures/synthetic/, tests/cases/, docs/contract/
+tests/cassettes/invest_get_candles.json: [data-file-outside-allowlist] файлы данных только в tests/fixtures/synthetic/, tests/cases/, docs/contract/
+tests/cassettes/invest_get_candles.json: [mcp-response] ключ ответа MCP "instrumentUid"
+Гигиена: 4 нарушений в 110 файлах
+exit=1
+```
+
+Текущий репозиторий: `make hygiene` → `Гигиена: ок, проверено файлов: 108`. Регрессионные тесты: `tests/test_hygiene.py` (51 тест, до правки 29 из них падали).
+
+### 2. Релиз этапов 1 и 1.5
+
+- `docs/STAGES.md`: у этапа 1 в колонке «Тег» — «в составе `v0.1.5`»; у этапа 1.5 ветка — «коммиты в `stage-1`, PR #1»; описано, что PR вливается merge-коммитом и что статус «принят» после merge записывается в PR следующего этапа.
+- `scripts/release_notes.py`: `stages_for_tag` возвращает все строки журнала с тегом (в том числе с пометкой «в составе»), по порядку; в текст релиза идут разделы «Что сделано» всех этих отчётов и ссылка на каждый отчёт. Тег из ячейки сравнивается целиком, а не по подстроке.
+- `docs/CI.md`: нумерация без отдельного `v0.1.0` (и почему), merge-коммит вместо squash, `"allowed_merge_methods": ["merge"]` в правиле `pull_request` команды ruleset, статус после merge. Ruleset не применялся.
+
+```
+$ RELEASE_TAG=v0.1.5 make release-notes && grep -n '^## \|^Отчёт' build/release.md
+1:## Этап 1
+44:## Этап 1.5
+98:## Образы
+105:Отчёт этапа 1: https://github.com/rombintu/factorminus/blob/v0.1.5/docs/reports/STAGE_1_REPORT.md
+106:Отчёт этапа 1.5: https://github.com/rombintu/factorminus/blob/v0.1.5/docs/reports/STAGE_1_5_REPORT.md
+```
+
+### 3. laya на 4 ГБ
+
+- ML smoke проверяет боевой путь: `laya.Router()` без `preload`, русский текст, `routing.model == "multilingual"`. Тест с `Router(preload=True)` помечен `ml_heavy` и запускается только с `--ml-heavy`; в `ml.yml` — `make docker-test-ml ML_PYTEST_ARGS=--ml-heavy`, в сводку прогона попадают итог pytest и пиковая память.
+- `make docker-test-ml-run` после pytest печатает `/sys/fs/cgroup/memory.peak` контейнера.
+
+Локально, Docker Desktop с 3,8 ГБ (`docker info`: 4 109 217 792 байт), образ `test-ml`:
+
+```
+$ make docker-test-ml
+.s                                                                       [100%]
+1 passed, 1 skipped in 3.80s
+Пиковая память контейнера: 2609 МБ
+
+$ make docker-test-ml-run            # ещё три прогона
+1 passed, 1 skipped in 4.14s   Пиковая память контейнера: 2242 МБ
+1 passed, 1 skipped in 2.57s   Пиковая память контейнера: 1861 МБ
+1 passed, 1 skipped in 2.60s   Пиковая память контейнера: 1855 МБ
+
+$ make docker-test-ml-run ML_PYTEST_ARGS=--ml-heavy
+.Killed
+Пиковая память контейнера: 3564 МБ
+make: *** [docker-test-ml-run] Error 137
+```
+
+Ленивый режим помещается в 4 ГБ: пик 1,9–2,6 ГБ. `memory.peak` учитывает и страничный кэш файлов весов, отсюда разброс. `preload=True` на 3,8 ГБ убивается по OOM. `docs/DEPLOY.md`: для `runtime-ml` хватает 4 ГБ, 8 ГБ — только для `preload=True`. В `docs/CONTEXT.md` у описания вызова laya записано, что в проекте `Router()` вызывается лениво.
+
+### 4. Сверка lock-файлов
+
+`scripts/check_locks.py` принимает любое число файлов и сверяет каждую пару; `make lock-check` передаёт `base.txt`, `dev.txt`, `ml.txt`. Тест `test_base_dev_drift_caught`: numpy в `base.txt` отличается от `dev.txt` → код 1 и строка `base.txt / dev.txt: numpy: 2.5.4 != 2.5.5`.
+
+```
+$ python scripts/check_locks.py requirements/base.txt requirements/dev.txt requirements/ml.txt
+base.txt и dev.txt: общие пакеты закреплены одинаково
+base.txt и ml.txt: общие пакеты закреплены одинаково
+dev.txt и ml.txt: общие пакеты закреплены одинаково
+```
+
+### 5. Dependabot и обновление зависимостей
+
+- `Dockerfile`: `FROM python:3.12-slim@sha256:191083cd… AS base` литерально, без `ARG`.
+- `.github/dependabot.yml`: остались `github-actions` и `docker`, `pip` убран (причина — в комментарии файла).
+- `make lock-upgrade`: `uv pip compile --upgrade` для `base`, `dev`, `ml`, `build`, `lock_extra_index.py` и сверка пар.
+- `.github/workflows/audit.yml`: `make audit` по понедельникам и вручную.
+- `docs/CI.md`: раздел «Обновление зависимостей» (`make lock-upgrade` → `make ci` → PR), исправлена фраза про Dependabot и базовый образ, `audit.yml` в схеме.
+- `make lint-docker` (actionlint по всем workflow, включая `audit.yml`, и hadolint по `Dockerfile`) — без замечаний, код 0.
+
+### 6. Пути и `.env`
+
+- `.env.example`: строки `FM_DB_PATH=` нет; в комментарии — что переменная есть, по умолчанию `<FM_DATA_DIR>/fm.sqlite`, относительный путь считается от корня.
+- `load_settings(env=...)` берёт корень через `repo_root(env)`: от него считаются `.env`, `FM_DATA_DIR`, относительные `FM_DB_PATH` и `TINVEST_CA_BUNDLE`. Тест `test_load_settings_uses_fm_home_from_env`.
+- `Settings()` по умолчанию: `data_dir = DATA_DIR`, `db_path = DATA_DIR / "fm.sqlite"` (не относительно текущей папки). Тест `test_settings_defaults_follow_data_dir`.
+
+### 7. Прочее
+
+- `pyproject.toml`: `license = "MIT"`, `license-files = ["LICENSE"]`, `build-system.requires = ["setuptools>=77"]`. Проверка `pip wheel -v --no-build-isolation` в образе с закреплённым setuptools 84.2.1: со старым `pyproject.toml` — `SetuptoolsDeprecationWarning: project.license as a TOML table is deprecated`, с новым предупреждения нет, `Successfully built factorminus`.
+- `docs/DEPLOY.md`: в разделах «Демо» и «Обновление» — что локально собранный образ помечается тегом GHCR и после `git pull` нужен `docker compose build`; первая локальная сборка занимает несколько минут.
+- `docs/STAGES.md`, строка 1.5: «коммиты в `stage-1`, PR #1».
+
+### Как проверено
+
+```
+$ make lint hygiene contract-check test-cov
+All checks passed!
+52 files already formatted
+Гигиена: ок, проверено файлов: 108
+схема в docs/contract совпадает с кодом
+Required test coverage of 89% reached. Total coverage: 91.48%
+337 passed, 9 skipped in 8.43s
+
+$ make docker-build docker-test docker-check docker-demo
+332 passed, 14 skipped in 6.21s
+ok: нет .env и *.sqlite
+ok: нет строк, похожих на токен, в /app и /opt/factorminus
+ok: процесс не root (uid 10001, USER 10001:10001)
+ok: TINVEST_TOKEN нет в docker history и ENV
+ok: fm mcp check без токена: код 2, сообщение о TINVEST_TOKEN, без трейсбека
+размер образа: 239 МБ
+Покрытие весов SYNIDX вселенной: 100.0% (нет во вселенной: нет)
+```
+
+**Не проверено локально:** `make lock-check`, `make lock-upgrade` и `make ci` целиком. С машины не открывался `pypi.org`: таймаут больше 45 минут, `download.pytorch.org` при этом отвечал. Сверка пар lock-файлов (`check_locks.py`) выполнена локально, вывод выше. `requirements/build.txt` не перегенерирован: закреплённый setuptools 84.2.1 удовлетворяет новому `setuptools>=77`, а перекомпиляцию проверит job `lockfiles` в CI.
+
 ## Открытые вопросы
 
 1. **PR.** По решению пользователя коммиты этапа 1.5 добавлены в PR #1 (ветка `stage-1`, fast-forward), отдельного PR нет. Публикацию `:main` в GHCR можно проверить только после merge.
 2. **`ml.yml` на PR запускается при каждом push:** фильтр `paths` для `pull_request` сравнивает весь diff PR с базой, а в нём есть `Dockerfile`; новый push отменяет предыдущий прогон (около 16 минут). На следующих этапах, когда `Dockerfile` не меняется, `ml` будет запускаться только по расписанию и вручную.
 3. **Защита `main` и видимость пакета GHCR** — настройки репозитория, инструкция и команда в `docs/CI.md`, не применялись.
-4. **ML smoke `Router(preload=True)`** локально не помещается в 3,8 ГБ Docker Desktop; для `fm-ml` нужно не меньше 8 ГБ (`docs/DEPLOY.md`). В CI тест проходит.
+4. **laya в Docker на Mac:** закрыто правками по ревью 1.5 (п. 3). Ленивый `Router()` проходит на 3,8 ГБ (пик 1,9–2,6 ГБ); `Router(preload=True)` на 3,8 ГБ по-прежнему падает по OOM и проверяется только в CI (`ml_heavy`).
 5. **`docs/tz/STAGE_2.md`** не закоммичен: он не относится к этапу 1.5.

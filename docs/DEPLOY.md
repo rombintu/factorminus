@@ -5,7 +5,7 @@
 ## 1. Docker
 
 - **Linux (VPS):** Docker Engine и плагин compose из официального репозитория Docker для вашего дистрибутива (docs.docker.com/engine/install). Проверка: `docker compose version`.
-- **macOS, Windows:** Docker Desktop. Для образа `runtime-ml` хватает 4 ГБ памяти Docker (Settings → Resources): laya грузит модели лениво (`Router()`), и на русском тексте в память попадает только multilingual; пиковая память контейнера в ML smoke — 2,2 ГБ. 8 ГБ нужны, только если держать в памяти все три модели сразу (`Router(preload=True)`; на 4 ГБ процесс убивается по OOM на 3,5 ГБ).
+- **macOS, Windows:** Docker Desktop. Для образа `runtime-ml` хватает 4 ГБ памяти Docker (Settings → Resources): laya грузит модели лениво (`Router()`), и на русском тексте в память попадает только multilingual; пиковая память контейнера в ML smoke — 1,9–2,6 ГБ в четырёх прогонах (вместе со страничным кэшем файлов весов). 8 ГБ нужны, только если держать в памяти все три модели сразу (`Router(preload=True)`; на 4 ГБ процесс убивается по OOM на 3,5 ГБ).
 
 ## 2. Код и настройки
 
