@@ -62,7 +62,7 @@ RUN chmod -R a+rX,go-w /opt/hf
 # --- синтетический набор: детерминирован по seed, в git не хранится ---
 FROM venv-base AS synth
 RUN --mount=type=bind,from=wheel,source=/wheels,target=/wheels \
-    pip install --no-deps --no-index /wheels/*.whl \
+    pip install --no-cache-dir --no-deps --no-index /wheels/*.whl \
     && fm synth generate --seed 42 --out /synth
 
 # --- файлы, которые нужны во время работы (только чтение) ---

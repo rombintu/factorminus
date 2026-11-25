@@ -20,10 +20,8 @@ SYNTH_SEED = 42
 
 
 def pytest_sessionstart(session):
-    parent = SYNTH_DIR.parent
-    if SYNTH_DIR.exists() and not os.access(SYNTH_DIR, os.W_OK):
-        return
-    if not SYNTH_DIR.exists() and not os.access(parent, os.W_OK):
+    # В свежем checkout нет даже tests/fixtures/: write_dataset создаст каталоги сам.
+    if (SYNTH_DIR / "manifest.json").exists() and not os.access(SYNTH_DIR, os.W_OK):
         return
     from factorminus.synth.generator import generate, write_dataset
 
