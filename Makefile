@@ -19,12 +19,10 @@ DOCKER_BUILD = docker buildx build --load $(DOCKER_BUILD_ARGS)
 # bash: process substitution в contract-check, [[ ]] в release-guard
 SHELL := /bin/bash
 
-.PHONY: install install-deps lint lint-docker test test-cov test-live test-ml hygiene gitleaks \
-	audit lock lock-upgrade lock-check contract-check ci release-guard ca-bundle \
-	ingest synth \
-	docker-build docker-build-ml docker-build-test docker-test docker-test-run docker-test-ml \
-	docker-build-test-ml docker-test-ml-run \
-	docker-demo docker-check clean-ci
+.PHONY: install install-deps lint lint-docker test test-cov test-live hygiene gitleaks \
+	audit lock lock-upgrade lock-check contract-check ci release-guard ca-bundle synth \
+	docker-build docker-build-test docker-test docker-test-run \
+	docker-build-test-ml docker-test-ml-run docker-test-ml docker-demo docker-check
 
 install:
 	test -x .venv/bin/python || python3.12 -m venv .venv
@@ -59,9 +57,6 @@ test-cov:
 
 test-live:
 	$(PY) -m pytest -q --live -m live
-
-test-ml:
-	$(PY) -m pytest -q --ml -m ml
 
 hygiene:
 	$(PY) scripts/check_repo_hygiene.py
@@ -132,18 +127,12 @@ release-guard:
 ca-bundle:
 	$(PY) scripts/build_ca_bundle.py --out data/ca/ru-bundle.pem
 
-ingest:
-	$(FM) ingest --mode record
-
 synth:
 	$(FM) synth generate --seed 42 --out tests/fixtures/synthetic
 	$(FM) synth load
 
 docker-build:
 	$(DOCKER_BUILD) --target runtime -t $(IMAGE):$(TAG) .
-
-docker-build-ml:
-	$(DOCKER_BUILD) --target runtime-ml -t $(IMAGE):$(TAG)-ml .
 
 docker-build-test:
 	$(DOCKER_BUILD) --target test -t $(IMAGE):test .
@@ -172,6 +161,3 @@ docker-demo:
 
 docker-check:
 	scripts/check_image.sh $(IMAGE):$(TAG)
-
-clean-ci:
-	rm -rf $(BUILD)

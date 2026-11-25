@@ -14,7 +14,7 @@ docker compose run --rm nightly           # реальные данные: то�
 docker compose run --rm fm db stats       # любая команда CLI
 ```
 
-Подробно — запуск на ноутбуке или VPS, cron, обновление, бэкап: [`docs/DEPLOY.md`](docs/DEPLOY.md). Проверки, сводка прогона и выпуск релиза: [`docs/CI.md`](docs/CI.md). Журнал этапов: [`docs/STAGES.md`](docs/STAGES.md).
+Подробно — запуск на ноутбуке или VPS, cron, обновление, бэкап: [`docs/DEPLOY.md`](docs/DEPLOY.md). Проверки и выпуск релиза: [`docs/CI.md`](docs/CI.md). Журнал этапов: [`docs/STAGES.md`](docs/STAGES.md).
 
 ## Установка
 

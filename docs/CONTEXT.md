@@ -83,7 +83,7 @@ ISS Мосбиржи ─┘ (сырые    (данные)   look-through (в Б�
 - `numpy` (корреляции), `pytest`, `ruff`;
 - `laya==0.5.1` — опциональная зависимость `[ml]`: тяжёлая, тянет torch. Готовое окружение с laya: `/Users/mi4r/env_hak/.venv`;
 - веб-интерфейс (этап 3): статический HTML/CSS/JS без сборщика, раздаётся из FastAPI.
-- **Docker и CI (этап 1.5):** один `Dockerfile` (цели `runtime`, `runtime-ml`, `test`), `compose.yaml` (`demo`, `fm`, `nightly`, `fm-ml`), GitHub Actions (`ci.yml`, `ml.yml`, `release.yml`), образы в GHCR. Lock-файлы `requirements/*.txt` (`make lock`). Пути: `FM_HOME` — корень, `FM_DATA_DIR` — данные времени выполнения; конфигурация из git читается из `<корень>/data`. Подробно: `docs/CI.md`, `docs/DEPLOY.md`.
+- **Docker и CI (этап 1.5):** один `Dockerfile` (цели `runtime`, `runtime-ml`, `test`), `compose.yaml` (`demo`, `fm`, `nightly`, `fm-ml`), GitHub Actions (`ci.yml`, `ml.yml`, `audit.yml`, `release.yml`), образ `runtime` в GHCR по тегу релиза. Lock-файлы `requirements/*.txt` (`make lock`). Пути: `FM_HOME` — корень, `FM_DATA_DIR` — данные времени выполнения; конфигурация из git читается из `<корень>/data`. Подробно: `docs/CI.md`, `docs/DEPLOY.md`.
 
 ## 5. Внешние данные
 
@@ -173,7 +173,7 @@ ISS Мосбиржи ─┘ (сырые    (данные)   look-through (в Б�
 | Этап | Суть | Результат |
 |---|---|---|
 | 1 | Фундамент и данные | Каркас репо, MCP-клиент (read-only, record/replay), загрузка вселенной бумаг в SQLite, веса IMOEX, контракт вердикта, CLI, синтетические фикстуры, тесты |
-| 1.5 | CI/CD, Docker и контроль этапов | Lock-файлы, Docker-образы и compose, GitHub Actions (проверки, сводка, релиз в GHCR), гигиена репозитория, журнал этапов `docs/STAGES.md`, шаблон PR |
+| 1.5 | CI/CD, Docker и контроль этапов | Lock-файлы, Docker-образы и compose, GitHub Actions (проверки, релиз в GHCR), гигиена репозитория, журнал этапов `docs/STAGES.md`, шаблон PR |
 | 2 | Движок анализа | Факторные профили (правила + laya), корреляции, look-through индексных фондов, группы компаний (слой 3), совместное падение в шоки (слой 9), эшелоны правил и laya, сборка вердикта, синтетический набор кейсов (10 контрольных + 30 размеченных) |
 | 3 | API и веб-сайт | FastAPI по контракту, сайт по сценарию: демо-портфели, сборка своего, плашка, раскрытие деталей, «Это неверно», новая структура, сводный экран, деградация |
 | 4 | Качество и Demo Day | Прогон 4 пайплайнов, e2e-тесты, замер латентности, два прогона подряд, отчёт по метрикам, README, сценарий демо |
