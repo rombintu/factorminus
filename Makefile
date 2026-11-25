@@ -21,7 +21,7 @@ DOCKER_BUILD = docker buildx build --load $(DOCKER_BUILD_ARGS)
 SHELL := /bin/bash
 
 .PHONY: install install-deps lint lint-docker test test-cov test-live test-ml hygiene gitleaks \
-	audit lock lock-upgrade lock-check contract-check ci ci-summary release-notes release-guard ca-bundle \
+	audit lock lock-upgrade lock-check contract-check ci ci-summary release-guard ca-bundle \
 	ingest synth \
 	docker-build docker-build-ml docker-build-test docker-test docker-test-run docker-test-ml \
 	docker-build-test-ml docker-test-ml-run \
@@ -125,11 +125,6 @@ ci: lint hygiene lock-check contract-check test-cov
 
 ci-summary:
 	$(PY) scripts/ci_summary.py --build $(BUILD)
-
-# Текст GitHub Release: RELEASE_TAG=v0.1.5 make release-notes (тег только из окружения)
-release-notes:
-	@mkdir -p $(BUILD)
-	$(PY) scripts/release_notes.py --tag "$$RELEASE_TAG" > $(BUILD)/release.md
 
 # Перед публикацией по тегу: формат vX.Y.Z и коммит уже в origin/main
 release-guard:
