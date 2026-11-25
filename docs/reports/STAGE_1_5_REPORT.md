@@ -413,6 +413,29 @@ ok: fm mcp check без токена: код 2, сообщение о TINVEST_TO
 
 **Не проверено локально:** `make lock-check`, `make lock-upgrade` и `make ci` целиком. С машины не открывался `pypi.org`: таймаут больше 45 минут, `download.pytorch.org` при этом отвечал. Сверка пар lock-файлов (`check_locks.py`) выполнена локально, вывод выше. `requirements/build.txt` не перегенерирован: закреплённый setuptools 84.2.1 удовлетворяет новому `setuptools>=77`, а перекомпиляцию проверит job `lockfiles` в CI.
 
+### CI на `2eb58c0` (PR #1)
+
+- ci: https://github.com/rombintu/factorminus/actions/runs/45564165729. Все jobs зелёные: lint, test, hygiene, lockfiles, contract, docker, audit, summary.
+- ml: https://github.com/rombintu/factorminus/actions/runs/45564165643. Зелёный.
+
+```
+lockfiles / make lock-check
+lock-файлы соответствуют pyproject.toml
+base.txt и dev.txt: общие пакеты закреплены одинаково
+base.txt и ml.txt: общие пакеты закреплены одинаково
+dev.txt и ml.txt: общие пакеты закреплены одинаково
+
+test / make test-cov
+Required test coverage of 89% reached. Total coverage: 91.48%
+337 passed, 9 skipped in 13.56s
+
+ml / make docker-test-ml ML_PYTEST_ARGS=--ml-heavy
+2 passed, 1 warning in 5.55s
+Пиковая память контейнера: 4854 МБ
+```
+
+`lock-check` в CI подтверждает, что `requirements/build.txt` с `setuptools>=77` перегенерировать не нужно. На раннере GitHub (16 ГБ) `preload=True` проходит с пиком 4,8 ГБ. Это сходится с `docs/DEPLOY.md`: на 4 ГБ этот режим не помещается, 8 ГБ хватает. `make lock-upgrade` по-прежнему не запускался ни локально, ни в CI.
+
 ## Открытые вопросы
 
 1. **PR.** По решению пользователя коммиты этапа 1.5 добавлены в PR #1 (ветка `stage-1`, fast-forward), отдельного PR нет. Публикацию `:main` в GHCR можно проверить только после merge.
