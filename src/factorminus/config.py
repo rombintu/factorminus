@@ -19,7 +19,9 @@ from urllib.parse import urlparse
 
 import certifi
 
-DEFAULT_MCP_URL = "https://invest-public-api.tbank.ru/mcp"
+# Песочница: все 9 инструментов белого списка на ней работают (проверено 25.11.2026), а её
+# токен не видит реальных счетов. Боевой адрес — https://invest-public-api.tbank.ru/mcp.
+DEFAULT_MCP_URL = "https://sandbox-invest-public-api.tbank.ru/mcp"
 DB_FILENAME = "fm.sqlite"
 ALLOWED_MCP_HOST_SUFFIX = "tbank.ru"
 # Серверы T-Invest и ISS присылают цепочку до Sub CA сами: в пакете нужен только корневой.

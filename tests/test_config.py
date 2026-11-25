@@ -58,6 +58,11 @@ def test_missing_dotenv_is_fine(tmp_path):
     assert s.db_path == s.data_dir / DB_FILENAME
 
 
+def test_default_mcp_url_is_sandbox():
+    """Все 9 инструментов проходят на песочнице (ревью PR #1, п. 3): боевой токен не нужен."""
+    assert DEFAULT_MCP_URL == "https://sandbox-invest-public-api.tbank.ru/mcp"
+
+
 def test_require_token_error(tmp_path):
     s = load_settings(env={}, env_file=tmp_path / "nope.env")
     with pytest.raises(ConfigError, match="задайте TINVEST_TOKEN в .env"):

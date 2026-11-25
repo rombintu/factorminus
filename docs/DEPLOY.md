@@ -11,11 +11,13 @@
 
 ```bash
 git clone https://github.com/rombintu/factorminus.git && cd factorminus
-cp .env.example .env      # затем впишите TINVEST_TOKEN (токен «только чтение»)
+cp .env.example .env      # затем впишите TINVEST_TOKEN (токен песочницы, Sandbox token)
 chmod 600 .env
 ```
 
-`.env` нужен только для реальных данных (`nightly`, `fm`). Демо работает без него. В образ `.env` не попадает: compose передаёт переменные только при запуске (`env_file`). Пути (`FM_HOME`, `FM_DATA_DIR`, `FM_DB_PATH`, `TINVEST_CA_BUNDLE`) и `TINVEST_INSECURE_SSL=0` в контейнере задаёт `compose.yaml`, значения из `.env` их не переопределяют.
+Для сбора данных нужен токен песочницы, боевой не нужен. Его выпускают на tbank.ru: настройки профиля Т-Инвестиций → «Токены T-Invest API» → токен для песочницы; использовать его нужно в течение 7 дней после выпуска, иначе его отзовут. Адрес по умолчанию — песочница `https://sandbox-invest-public-api.tbank.ru/mcp`: все 9 инструментов, которые вызывает код, на ней работают. Запасной вариант, если песочница перестанет отвечать: `TINVEST_MCP_URL=https://invest-public-api.tbank.ru/mcp` и боевой токен типа «Только чтение» (заявки выставлять не может, но видит портфель).
+
+`.env` нужен только для реальных данных (`nightly`, `fm`). Демо работает без него. В образ `.env` не попадает: compose передаёт переменные только при запуске (`env_file`). Пути (`FM_HOME`, `FM_DATA_DIR`, `FM_DB_PATH`) и `TINVEST_INSECURE_SSL=0` в контейнере задаёт `compose.yaml`, значения из `.env` их не переопределяют.
 
 ## 3. Демо на синтетике
 
@@ -82,9 +84,9 @@ docker run --rm -v factorminus_fm-data:/data -v "$PWD":/backup busybox \
 | Симптом | Причина и что делать |
 |---|---|
 | `Ошибка: Токен не найден: задайте TINVEST_TOKEN…` | нет `.env` или в нём пустой `TINVEST_TOKEN`; `.env` должен лежать рядом с `compose.yaml` |
-| `HTTP 401` / `403` | токен отозван или не тот: выпустите новый токен «только чтение» в настройках T-Invest |
-| `CERTIFICATE_VERIFY_FAILED` | в образе бандл certifi + Russian Trusted Root/Sub CA (`/opt/factorminus/ca/ru-bundle.pem`). Если сертификат сервера сменился, обновите `certs/` (отпечаток сверяется с Госуслугами), пересоберите образ. `TINVEST_INSECURE_SSL=1` — только для локальной отладки |
-| `ConnectError`, таймауты | нет сети до `invest-public-api.tbank.ru` (файрвол VPS, зарубежный хостинг): проверьте `curl -sI https://invest-public-api.tbank.ru` с хоста |
+| `HTTP 401` / `403` | токен отозван, просрочен (токен песочницы отзывается, если его не использовать 7 дней после выпуска) или не для этого адреса: токен песочницы работает только с `sandbox-invest-public-api.tbank.ru`, боевой — только с `invest-public-api.tbank.ru` |
+| `CERTIFICATE_VERIFY_FAILED` | проверка идёт по certifi + Russian Trusted Root CA из пакета (`src/factorminus/certs/`). Если сервер перестал присылать промежуточный сертификат или сменил корневой, ошибка останется: обновите PEM и `ROOT_CA_SHA256` в `config.py` (отпечаток сверяется с Госуслугами) и пересоберите образ. `TINVEST_INSECURE_SSL=1` — только для локальной отладки |
+| `ConnectError`, таймауты | нет сети до `sandbox-invest-public-api.tbank.ru` (файрвол VPS, зарубежный хостинг): проверьте `curl -sI https://sandbox-invest-public-api.tbank.ru` с хоста |
 | `HTTP 429` | превышен лимит 200 запросов в минуту: не запускайте два `nightly` одновременно |
 
 Без MCP сервис не ломается: демо и уже загруженные данные работают.
