@@ -3,11 +3,12 @@
 #   docker compose run --rm fm db stats       — любая команда CLI (профиль tools)
 #   docker compose run --rm nightly           — загрузка реальных данных, токен из .env
 #   docker compose run --rm fm-ml --help      — образ с laya (профиль ml)
-# Образ: ghcr.io/rombintu/factorminus:${FM_TAG:-main}; docker compose build — собрать локально.
+# Образ: ghcr.io/rombintu/factorminus:${FM_TAG:-latest}; если его нет в GHCR, compose собирает локально.
+# fm-ml в GHCR не публикуется: docker compose --profile ml build fm-ml.
 name: factorminus
 
 x-fm: &fm
-  image: ${FM_IMAGE:-ghcr.io/rombintu/factorminus:${FM_TAG:-main}}
+  image: ${FM_IMAGE:-ghcr.io/rombintu/factorminus:${FM_TAG:-latest}}
   build:
     context: .
     target: runtime
@@ -64,7 +65,7 @@ services:
 
   fm-ml:
     <<: [*fm, *token]
-    image: ${FM_IMAGE_ML:-ghcr.io/rombintu/factorminus:${FM_TAG:-main}-ml}
+    image: factorminus:ml
     build:
       context: .
       target: runtime-ml

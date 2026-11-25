@@ -1,15 +1,11 @@
-# CD: публикация образов в GHCR и GitHub Release. Схема и порядок выпуска: docs/CI.md.
-#   push в main      → :main, :sha-<коротк> (только runtime)
-#   тег vX.Y.Z       → :X.Y.Z, :X.Y, :latest, :vX.Y.Z (runtime); :X.Y.Z-ml, :vX.Y.Z-ml (runtime-ml);
-#                      GitHub Release с разделом «Что сделано» из отчёта этапа
-# Публикация идёт только после зелёного CI на том же коммите: ci.yml вызывается здесь как
-# переиспользуемый workflow, job-ы публикации зависят от него (needs).
-# Теги ставит пользователь; workflow только реагирует на них.
+# Релиз по тегу vX.Y.Z: проверка тега → CI на том же коммите → образ runtime в GHCR
+# (linux/amd64 и linux/arm64 одной сборкой через QEMU) → GitHub Release.
+# Теги образа: X.Y.Z, X.Y, latest, vX.Y.Z. ML-образ не публикуется, его собирают локально.
+# Теги ставит пользователь; workflow только реагирует на них. Схема: docs/CI.md.
 name: release
 
 on:
   push:
-    branches: [main]
     tags: ["v[0-9]+.[0-9]+.[0-9]+"]
 
 permissions:
@@ -20,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Тег должен иметь вид vX.Y.Z и стоять на коммите, который уже в main
+  # Тег вида vX.Y.Z и стоит на коммите, который уже в main
   guard:
     runs-on: ubuntu-24.04
     steps:
@@ -28,9 +24,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: release guard
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
+      - env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: make release-guard
 
@@ -40,54 +34,62 @@ jobs:
     permissions:
       contents: read
 
-  runtime:
+  image:
     needs: ci
-    uses: ./.github/workflows/_image.yml
-    permissions:
-      contents: read
-      packages: write
-    with:
-      target: runtime
-      tags: |
-        type=ref,event=branch
-        type=sha,prefix=sha-,format=short,enable=${{ github.ref == 'refs/heads/main' }}
-        type=semver,pattern={{version}}
-        type=semver,pattern={{major}}.{{minor}}
-        type=ref,event=tag
-
-  runtime-ml:
-    needs: ci
-    if: startsWith(github.ref, 'refs/tags/v')
-    uses: ./.github/workflows/_image.yml
-    permissions:
-      contents: read
-      packages: write
-    with:
-      target: runtime-ml
-      flavor: latest=false
-      tags: |
-        type=semver,pattern={{version}},suffix=-ml
-        type=ref,event=tag,suffix=-ml
-
-  github-release:
-    needs: [runtime, runtime-ml]
-    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     permissions:
-      contents: write
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          python-version: "3.12"
-      - name: release notes
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: make release-notes
-      - name: create release
-        env:
+          images: ghcr.io/rombintu/factorminus
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=ref,event=tag
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          image: tonistiigi/binfmt:qemu-v10.0.4@sha256:8f58e6214f4cc9dc83ce8f5acad1ece508eb6b20e696a8c1e9f274481982c541
+          platforms: arm64
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver-opts: image=moby/buildkit:v0.35.1@sha256:baf6138eb8c37644800c7c913fba051e840ebb9ba13eaf92d92ef9a1712d0b4c
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: runtime
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+            REVISION=${{ github.sha }}
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=release
+          cache-to: type=gha,mode=max,scope=release
+
+  github-release:
+    needs: image
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG" --notes-file build/release.md
+        run: >-
+          gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes
+          --notes "Отчёты этапов: docs/STAGES.md. Запуск: docs/DEPLOY.md."

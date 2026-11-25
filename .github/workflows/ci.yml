@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  # release.yml вызывает этот workflow и публикует образы только после его успеха
+  # release.yml (только теги vX.Y.Z) вызывает этот workflow и публикует образ после его успеха
   workflow_call:
 
 permissions:
@@ -16,7 +16,7 @@ permissions:
 concurrency:
   # при вызове из release.yml github.workflow = "release": отдельная группа, без взаимной отмены
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  # из release.yml прогон не отменяется: иначе коммит в main остался бы без публикации
+  # из release.yml прогон не отменяется: иначе тег остался бы без релиза
   cancel-in-progress: ${{ github.workflow == 'ci' }}
 
 env:

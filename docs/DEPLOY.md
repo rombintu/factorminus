@@ -20,13 +20,13 @@ chmod 600 .env
 ## 3. Демо на синтетике
 
 ```bash
-docker compose pull            # готовый образ из GHCR (пока пакет приватный — см. docs/CI.md)
+docker compose pull            # образ последнего релиза из GHCR (пока пакет приватный — см. docs/CI.md)
 docker compose run --rm demo
 ```
 
 Или собрать локально: `docker compose build && docker compose run --rm demo` (`make docker-build docker-demo` делает то же для образа `factorminus:local`). Первая локальная сборка занимает несколько минут: скачиваются базовый образ и зависимости.
 
-Если пакета в GHCR нет или он приватный, `docker compose run` сам собирает образ локально и помечает его как `ghcr.io/rombintu/factorminus:main` (или `:$FM_TAG`). После `git pull` этот образ остаётся старым, пока не выполнить `docker compose build` (или `docker compose pull`, когда пакет станет публичным).
+Если пакета в GHCR нет или он приватный, `docker compose run` сам собирает образ локально и помечает его как `ghcr.io/rombintu/factorminus:latest` (или `:$FM_TAG`). После `git pull` этот образ остаётся старым, пока не выполнить `docker compose build` (или `docker compose pull`, когда пакет станет публичным).
 
 Демо загружает синтетический набор в том `fm-data` и печатает `fm db stats`. Контейнер демо запускается без сети (`network_mode: none`) и без `.env`.
 
@@ -61,7 +61,7 @@ FM_TAG=v0.2.0 docker compose run --rm demo
 
 Если образ собирался локально (пакет в GHCR приватный или его нет), `pull` его не обновит: после `git pull` выполните `docker compose build`.
 
-Чтобы не писать `FM_TAG` каждый раз, добавьте строку `FM_TAG=v0.2.0` в файл `.env`: compose читает его для подстановки переменных. Теги образов: `vX.Y.Z` и `X.Y.Z`, `X.Y`, `latest`, `main` (последний коммит в `main`); ML-образ — `vX.Y.Z-ml` (`docker compose --profile ml pull fm-ml`).
+Чтобы не писать `FM_TAG` каждый раз, добавьте строку `FM_TAG=v0.2.0` в файл `.env`: compose читает его для подстановки переменных. Теги образов в GHCR ставятся только на релизы: `X.Y.Z`, `X.Y`, `latest`, `vX.Y.Z`. ML-образ (laya) в GHCR не публикуется, его собирают локально: `docker compose --profile ml build fm-ml`, образ `factorminus:ml`.
 
 ## 7. Бэкап тома `fm-data`
 
