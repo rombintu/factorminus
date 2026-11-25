@@ -74,12 +74,13 @@ def test_token_caught_and_masked_not(universe):
     assert FAKE_TOKEN not in str(got)  # нарушение не печатает сам токен
 
 
-def test_large_file_caught_unless_allowed(universe):
+def test_large_file_caught_unless_allowed(universe, monkeypatch):
     big = b"0" * (hy.MAX_BYTES + 1)
-    files = make(universe, {"blob.bin": big, "tests/fixtures/synthetic/candles.csv": big})
+    files = make(universe, {"blob.bin": big, "tests/cases/big.csv": big})
+    monkeypatch.setitem(hy.LARGE_ALLOWED, "tests/cases/big.csv", "пример исключения")
     got = rules(hy.check(universe, files + ["data/universe.yaml"]))
     assert ("blob.bin", "large-file") in got
-    assert ("tests/fixtures/synthetic/candles.csv", "large-file") not in got
+    assert ("tests/cases/big.csv", "large-file") not in got
 
 
 def test_real_tickers_in_fixtures(universe):

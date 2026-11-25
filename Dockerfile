@@ -59,10 +59,16 @@ RUN python -c "import os; from huggingface_hub import snapshot_download; from la
 # процесс в runtime-ml не root: кэш весов только для чтения, но читаемый всеми
 RUN chmod -R a+rX,go-w /opt/hf
 
-# --- файлы из git, которые нужны во время работы (только чтение) ---
+# --- синтетический набор: детерминирован по seed, в git не хранится ---
+FROM venv-base AS synth
+RUN --mount=type=bind,from=wheel,source=/wheels,target=/wheels \
+    pip install --no-deps --no-index /wheels/*.whl \
+    && fm synth generate --seed 42 --out /synth
+
+# --- файлы, которые нужны во время работы (только чтение) ---
 FROM scratch AS app-files
 COPY data/*.yaml /app/data/
-COPY tests/fixtures/synthetic /app/tests/fixtures/synthetic
+COPY --from=synth /synth /app/tests/fixtures/synthetic
 
 # --- runtime ---
 FROM base AS runtime

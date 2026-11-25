@@ -98,7 +98,7 @@ Lock-файлы `requirements/{base,dev,ml,build}.txt` собирает `uv pip 
 
 1. `git switch -c deps-YYYY-MM-DD` от `main`.
 2. `make lock-upgrade`: все четыре файла пересобираются с `--upgrade`, затем сверка пар.
-3. `make ci`, затем PR (на нём запустится `audit.yml`). Если поменялся numpy, может понадобиться `make synth`.
+3. `make ci`, затем PR (на нём запустится `audit.yml`). Если поменялся numpy, набор синтетики из seed может измениться: это поймают тесты паспорта.
 
 ## Безопасность workflow
 

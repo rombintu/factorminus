@@ -22,8 +22,8 @@ __pycache__/
 .ruff_cache/
 *.egg-info/
 
-# Synthetic cassettes are generated on the fly from the seed
-tests/fixtures/synthetic/cassettes/
+# Synthetic set (data and cassettes) is generated from the seed: tests/conftest.py, Dockerfile
+tests/fixtures/synthetic/
 
 # Build and CI outputs
 build/

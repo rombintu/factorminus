@@ -136,7 +136,8 @@ def test_replay_missing_cassette_is_logged_not_fatal(tmp_path):
 
 
 @pytest.mark.git
-def test_cassettes_not_in_git():
+def test_synthetic_set_not_in_git():
+    """Набор строится из seed (conftest, образ), в git его нет — ни данных, ни кассет."""
     import subprocess
 
     from factorminus.config import REPO_ROOT
@@ -148,4 +149,4 @@ def test_cassettes_not_in_git():
         text=True,
         check=True,
     ).stdout.split()
-    assert out and not any("/cassettes/" in p for p in out)
+    assert out == []

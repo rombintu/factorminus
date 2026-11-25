@@ -34,10 +34,10 @@ def test_different_seed_differs(tmp_path):
     ).read_bytes()
 
 
-def test_committed_fixtures_match_generator(tmp_path):
-    """Фикстуры в git совпадают с тем, что даёт `fm synth generate --seed 42`."""
+def test_fixtures_match_generator(tmp_path):
+    """Набор в tests/fixtures/synthetic (из conftest или из образа) — это seed 42."""
     write_dataset(generate(42), tmp_path / "gen")
-    assert _dirs_equal(tmp_path / "gen", FIXTURES), "перегенерируйте: make synth"
+    assert _dirs_equal(tmp_path / "gen", FIXTURES), "пересоберите образ или: make synth"
 
 
 @pytest.fixture(scope="module")

@@ -27,9 +27,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
 MAX_BYTES = 1024 * 1024
-LARGE_ALLOWED = {
-    "tests/fixtures/synthetic/candles.csv": "синтетические свечи: 32 бумаги × 1500 дней",
-}
+LARGE_ALLOWED: dict[str, str] = {}
 # Файлы данных разрешены только здесь (синтетика, кейсы eval, схема контракта)
 DATA_DIRS = ("tests/fixtures/synthetic/", "tests/cases/", "docs/contract/")
 DATA_EXTS = {
@@ -42,10 +40,6 @@ SCHEMA_ID_EXAMPLE = (
     "цен и ответов MCP нет"
 )
 TICKER_EXCEPTIONS = {
-    "tests/fixtures/synthetic/manifest.json": (
-        "в пояснении к ожидаемому свойству упомянуты TGLD, LQDT, TBRU как пример особенности "
-        "данных (пустой сектор бренда); цен и ответов MCP нет"
-    ),
     "docs/contract/verdict_request.schema.json": SCHEMA_ID_EXAMPLE,
     "docs/contract/verdict_response.schema.json": SCHEMA_ID_EXAMPLE,
 }

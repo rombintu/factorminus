@@ -1,3 +1,4 @@
+import os
 import shutil
 import socket
 from pathlib import Path
@@ -9,6 +10,24 @@ import pytest
 IN_GIT_CHECKOUT = (
     shutil.which("git") is not None and (Path(__file__).resolve().parents[1] / ".git").exists()
 )
+
+
+# Синтетический набор не хранится в git: он детерминирован по seed и строится за ~0,5 с.
+# Локально и в CI conftest пересобирает его перед тестами. В образе `test` каталог только
+# для чтения: набор там собран при сборке образа из того же кода (стадия synth в Dockerfile).
+SYNTH_DIR = Path(__file__).resolve().parent / "fixtures" / "synthetic"
+SYNTH_SEED = 42
+
+
+def pytest_sessionstart(session):
+    parent = SYNTH_DIR.parent
+    if SYNTH_DIR.exists() and not os.access(SYNTH_DIR, os.W_OK):
+        return
+    if not SYNTH_DIR.exists() and not os.access(parent, os.W_OK):
+        return
+    from factorminus.synth.generator import generate, write_dataset
+
+    write_dataset(generate(SYNTH_SEED), SYNTH_DIR)
 
 
 def pytest_addoption(parser):
