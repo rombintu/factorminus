@@ -3,9 +3,11 @@ from pathlib import Path
 import pytest
 
 from factorminus.config import (
-    DEFAULT_DB_PATH,
+    DATA_DIR,
+    DB_FILENAME,
     DEFAULT_MCP_URL,
     ConfigError,
+    Settings,
     load_settings,
     mask_secret,
 )
@@ -50,7 +52,7 @@ def test_missing_dotenv_is_fine(tmp_path):
     s = load_settings(env={}, env_file=tmp_path / "nope.env")
     assert s.token is None
     assert s.mcp_url == DEFAULT_MCP_URL
-    assert str(s.db_path).endswith(DEFAULT_DB_PATH)
+    assert s.db_path == s.data_dir / DB_FILENAME
 
 
 def test_require_token_error(tmp_path):
@@ -239,11 +241,9 @@ def test_load_settings_uses_fm_home_from_env(tmp_path):
 
 def test_settings_defaults_follow_data_dir():
     """Settings() без путей не зависит от текущей папки (ревью 1.5, п. 6.3)."""
-    from factorminus.config import DATA_DIR, Settings
-
     s = Settings(token=None)
     assert s.data_dir == DATA_DIR
-    assert s.db_path == DATA_DIR / "fm.sqlite"
+    assert s.db_path == DATA_DIR / DB_FILENAME
 
 
 @pytest.mark.git  # .env.example есть в checkout, в образе test его нет

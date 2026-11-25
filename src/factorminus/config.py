@@ -13,7 +13,6 @@ from urllib.parse import urlparse
 
 DEFAULT_MCP_URL = "https://invest-public-api.tbank.ru/mcp"
 DB_FILENAME = "fm.sqlite"
-DEFAULT_DB_PATH = f"data/{DB_FILENAME}"  # относительно корня, если FM_DATA_DIR не задан
 ALLOWED_MCP_HOST_SUFFIX = "tbank.ru"
 _TOKEN_RE = re.compile(r"^[\x21-\x7e]+$")
 
