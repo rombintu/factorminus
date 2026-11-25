@@ -546,6 +546,40 @@ $ make lint-docker
 
 **Не проверено локально:** `make docker-build docker-test docker-demo docker-check` после TLS-правок. После добавления `certifi` в `dependencies` в `base.txt` изменилась строка `via`, и слой зависимостей образа пересобирается, а из контейнеров Docker Desktop TLS-рукопожатие с PyPI не проходило больше 45 минут (`_ssl.c: The handshake operation timed out`; с хоста PyPI отвечал, `make ci` с `lock-check` прошёл). Сборку образа, тесты в нём, демо и `check_image.sh` с новой проверкой `tls_context()` выполняет job `docker` в CI на PR #1.
 
+### CI на `bd7474c` (PR #1)
+
+- ci: https://github.com/rombintu/factorminus/actions/runs/45624417790. Все jobs зелёные: lint, test, hygiene, lockfiles, contract, docker. Job `summary` и `audit` в `ci.yml` больше нет.
+- audit: https://github.com/rombintu/factorminus/actions/runs/45624417864. Запустился на PR из-за изменения `requirements/**`, зелёный.
+- ml: https://github.com/rombintu/factorminus/actions/runs/45624417661. Зелёный.
+
+```
+test / make test-cov
+Required test coverage of 89% reached. Total coverage: 91.55%
+325 passed, 17 skipped in 12.61s
+
+lockfiles / make lock-check
+lock-файлы соответствуют pyproject.toml
+
+docker / make docker-test-run, make -s docker-check
+320 passed, 22 skipped in 14.38s
+- ok: нет .env и *.sqlite
+- ok: нет строк, похожих на токен, в /app и /opt/factorminus
+- ok: процесс не root (uid 10001, USER 10001:10001)
+- ok: TINVEST_TOKEN нет в docker history и ENV
+- ok: tls_context() строится (certifi + Russian Trusted Root CA из пакета)
+- ok: fm mcp check без токена: код 2, сообщение о TINVEST_TOKEN, без трейсбека
+- размер образа: 217 МБ
+
+audit / make audit (base, dev, ml)
+No known vulnerabilities found   (×3)
+
+ml / make docker-test-ml
+1 passed in 5.05s
+Пиковая память контейнера: 2466 МБ
+```
+
+Job `docker` закрыл то, что не удалось проверить локально: образ собирается, `tls_context()` в `runtime` строится. Образ `runtime` уменьшился с 239 до 217 МБ: в нём больше нет CA-бандла и `/opt/factorminus`.
+
 ## Открытые вопросы
 
 1. **PR.** По решению пользователя коммиты этапа 1.5 добавлены в PR #1 (ветка `stage-1`, fast-forward), отдельного PR нет. Публикацию образа в GHCR можно проверить только после merge и тега `v0.1.5` (на push в `main` образы больше не публикуются).
