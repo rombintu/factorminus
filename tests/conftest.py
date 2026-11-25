@@ -16,17 +16,11 @@ def pytest_addoption(parser):
     parser.addoption(
         "--ml", action="store_true", help="запускать ML-тесты (laya, образ runtime-ml)"
     )
-    parser.addoption(
-        "--ml-heavy",
-        action="store_true",
-        help="запускать ML-тесты, которым нужно больше 4 ГБ памяти (все модели laya сразу)",
-    )
 
 
 OPT_IN = {
     "live": "live-тест: запустите make test-live",
     "ml": "ML-тест: запустите make test-ml (нужны laya и веса, образ runtime-ml)",
-    "ml_heavy": "ML-тест с preload=True: нужно больше 4 ГБ памяти, запускается в CI (--ml-heavy)",
 }
 
 
@@ -37,7 +31,7 @@ def pytest_collection_modifyitems(config, items):
             if "git" in item.keywords:
                 item.add_marker(skip_git)
     for marker, reason in OPT_IN.items():
-        if config.getoption(f"--{marker.replace('_', '-')}"):
+        if config.getoption(f"--{marker}"):
             continue
         skip = pytest.mark.skip(reason=reason)
         for item in items:

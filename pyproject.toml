@@ -55,7 +55,6 @@ pythonpath = ["tests"]
 markers = [
   "live: требует сети и реального токена (make test-live)",
   "ml: требует laya и весов модели (make test-ml, образ runtime-ml)",
-  "ml_heavy: ML-тест, которому мало 4 ГБ памяти (preload всех моделей laya); только --ml-heavy",
   "git: читает git ls-files; без git-репозитория (образ test) пропускается",
 ]
 

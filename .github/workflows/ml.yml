@@ -50,8 +50,8 @@ jobs:
           tags: factorminus:ci-ml
           cache-from: type=gha,scope=runtime-ml
           cache-to: type=gha,mode=max,scope=runtime-ml
-      # ленивый Router() и, раз памяти на раннере хватает, preload=True (ml_heavy)
-      - run: mkdir -p build && make docker-test-ml ML_PYTEST_ARGS=--ml-heavy 2>&1 | tee build/ml.log
+      # ленивый Router(), как в проекте; в конце пиковая память контейнера
+      - run: mkdir -p build && make docker-test-ml 2>&1 | tee build/ml.log
       - name: summary
         if: always()
         run: |

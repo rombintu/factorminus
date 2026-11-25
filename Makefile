@@ -155,15 +155,13 @@ docker-test-run:
 docker-test: docker-build-test docker-test-run
 
 # ML smoke в образе test-ml (runtime-ml + pytest): веса уже внутри, сеть отключена.
-# По умолчанию — ленивый Router() (помещается в 4 ГБ); ML_PYTEST_ARGS=--ml-heavy добавляет
-# тест с preload=True (CI). В конце печатается пиковая память контейнера (cgroup v2).
-ML_PYTEST_ARGS ?=
+# Ленивый Router() (помещается в 4 ГБ); в конце — пиковая память контейнера (cgroup v2).
 docker-build-test-ml:
 	$(DOCKER_BUILD) --target test-ml -t $(IMAGE):test-ml .
 
 docker-test-ml-run:
 	docker run --rm --network none $(IMAGE):test-ml sh -c '\
-		python -m pytest -q -p no:cacheprovider --ml -m ml $(ML_PYTEST_ARGS); rc=$$?; \
+		python -m pytest -q -p no:cacheprovider --ml -m ml; rc=$$?; \
 		peak=$$(cat /sys/fs/cgroup/memory.peak 2>/dev/null) \
 		&& echo "Пиковая память контейнера: $$((peak / 1024 / 1024)) МБ"; exit $$rc'
 
