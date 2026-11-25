@@ -30,3 +30,10 @@ build/
 .coverage
 coverage.xml
 htmlcov/
+
+# Internal working docs: specs, plans, stage reports (kept locally only)
+docs/tz/
+docs/plans/
+docs/reports/
+docs/STAGES.md
+docs/CONTEXT.md

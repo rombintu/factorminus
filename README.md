@@ -2,7 +2,7 @@
 
 [![ci](https://github.com/rombintu/factorminus/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rombintu/factorminus/actions/workflows/ci.yml)
 
-Сервис показывает инвестору в момент покупки, как бумага ляжет в портфель: ловит фонды-близнецы, скрытую концентрацию и перекос в один фактор. Сделку он не блокирует и ничего не советует. Подробности: `docs/CONTEXT.md`.
+Сервис показывает инвестору в момент покупки, как бумага ляжет в портфель: ловит фонды-близнецы, скрытую концентрацию и перекос в один фактор. Сделку он не блокирует и ничего не советует.
 
 Сейчас готов этап 1: данные и фундамент. Есть read-only клиент T-Invest MCP, загрузка бумаг и свечей в SQLite, веса IMOEX, синтетический набор для тестов и контракт вердикта.
 
@@ -14,7 +14,7 @@ docker compose run --rm nightly           # реальные данные: то�
 docker compose run --rm fm db stats       # любая команда CLI
 ```
 
-Подробно — запуск на ноутбуке или VPS, cron, обновление, бэкап: [`docs/DEPLOY.md`](docs/DEPLOY.md). Проверки и выпуск релиза: [`docs/CI.md`](docs/CI.md). Журнал этапов: [`docs/STAGES.md`](docs/STAGES.md).
+Подробно — запуск на ноутбуке или VPS, cron, обновление, бэкап: [`docs/DEPLOY.md`](docs/DEPLOY.md). Проверки и выпуск релиза: [`docs/CI.md`](docs/CI.md).
 
 ## Установка
 

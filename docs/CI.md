@@ -37,14 +37,14 @@
 
 Нумерация: `v0.1.5` — этапы 1 и 1.5 (один PR #1), `v0.2.0` — этап 2, `v0.3.0` — этап 3, `v1.0.0` — Demo Day. PR этапа вливается merge-коммитом, не squash.
 
-1. PR влит в `main`, CI зелёный, строка этапа в `docs/STAGES.md` заполнена.
+1. PR влит в `main`, CI зелёный.
 2. Пользователь ставит тег на коммит в `main`:
    ```bash
    git switch main && git pull
    git tag -a v0.1.5 -m "Этапы 1 и 1.5"
    git push origin v0.1.5
    ```
-3. `release.yml`: job `guard` (`make release-guard`) проверяет формат тега и то, что коммит уже в `main`; затем CI на этом коммите (переиспользуемый `ci.yml`); затем одна сборка `runtime` для `linux/amd64` и `linux/arm64` (QEMU) с SBOM и provenance и публикация `ghcr.io/rombintu/factorminus` с тегами `0.1.5`, `0.1`, `latest`, `v0.1.5`; затем GitHub Release с текстом от GitHub (`--generate-notes`: PR и коммиты) и ссылками на `docs/STAGES.md` и `docs/DEPLOY.md`.
+3. `release.yml`: job `guard` (`make release-guard`) проверяет формат тега и то, что коммит уже в `main`; затем CI на этом коммите (переиспользуемый `ci.yml`); затем одна сборка `runtime` для `linux/amd64` и `linux/arm64` (QEMU) с SBOM и provenance и публикация `ghcr.io/rombintu/factorminus` с тегами `0.1.5`, `0.1`, `latest`, `v0.1.5`; затем GitHub Release с текстом от GitHub (`--generate-notes`: PR и коммиты) и ссылкой на `docs/DEPLOY.md`.
 
 На push в `main` идёт только `ci.yml`, образы не публикуются. ML-образ в GHCR не публикуется: `docker compose --profile ml build fm-ml`.
 

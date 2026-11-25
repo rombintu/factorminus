@@ -1,6 +1,6 @@
 # Контракт вердикта v1.0
 
-Описание полей: `docs/CONTEXT.md`, раздел 7. Модели: `src/factorminus/contracts.py`.
+Модели и описание полей: `src/factorminus/contracts.py`.
 
 - `verdict_request.schema.json`, `verdict_response.schema.json` — JSON Schema, генерируются командой `fm contract export`. Руками не править: тест сверяет файлы с моделями.
 - `examples/` — по одному примеру ответа на вердикты `duplicate`, `increases_skew`, `reduces_skew`, `neutral`, `unavailable`. Бумаги в примерах синтетические (`SYN_*`), числа иллюстративные, это не рыночные данные.

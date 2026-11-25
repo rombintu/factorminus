@@ -92,4 +92,4 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: >-
           gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes
-          --notes "Отчёты этапов: docs/STAGES.md. Запуск: docs/DEPLOY.md."
+          --notes "Запуск: docs/DEPLOY.md."
