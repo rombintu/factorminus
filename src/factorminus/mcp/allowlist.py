@@ -2,6 +2,9 @@
 
 Торговые, денежные и портфельные инструменты сюда не входят и не должны входить:
 любой вызов вне списка отклоняется до отправки запроса.
+
+В списке только инструменты, которые вызывает код. Новый добавляется вместе с кодом, который
+его вызывает, и с live-проверкой в `tests/test_live.py` (`SMOKE_ARGS`, `SMOKE_FIELD`).
 """
 
 from factorminus.mcp.errors import ForbiddenToolError
@@ -17,17 +20,9 @@ READ_ONLY_TOOLS: frozenset[str] = frozenset(
         # активы и бренды
         "invest_get_asset",
         "invest_get_brand",
-        "invest_get_asset_fundamentals",
         # рыночные данные
         "invest_get_candles",
         "invest_get_risk_rates",
-        "invest_get_market_values",
-        "invest_get_trading_statuses",
-        "invest_get_news",
-        # каталоги
-        "invest_list_shares",
-        "invest_list_etfs",
-        "invest_list_bonds",
     }
 )
 

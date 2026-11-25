@@ -4,6 +4,7 @@ from factorminus.mcp.allowlist import READ_ONLY_TOOLS, ensure_allowed
 from factorminus.mcp.cassette import Cassette
 from factorminus.mcp.errors import CassetteMissError, ForbiddenToolError
 
+# Только инструменты, которые вызывает код (ревью PR #1, п. 3)
 EXPECTED = {
     "invest_find_instrument",
     "invest_get_share",
@@ -12,15 +13,8 @@ EXPECTED = {
     "invest_get_currency",
     "invest_get_asset",
     "invest_get_brand",
-    "invest_get_asset_fundamentals",
     "invest_get_candles",
     "invest_get_risk_rates",
-    "invest_list_shares",
-    "invest_list_etfs",
-    "invest_list_bonds",
-    "invest_get_market_values",
-    "invest_get_trading_statuses",
-    "invest_get_news",
 }
 
 
@@ -28,6 +22,22 @@ def test_allowlist_is_exactly_spec():
     assert READ_ONLY_TOOLS == frozenset(EXPECTED)
     for name in EXPECTED:
         ensure_allowed(name)
+
+
+@pytest.mark.parametrize(
+    "name", ["invest_get_asset_fundamentals", "invest_get_news", "invest_list_shares"]
+)
+def test_unused_tools_removed(name):
+    with pytest.raises(ForbiddenToolError):
+        ensure_allowed(name)
+
+
+def test_every_allowed_tool_has_live_smoke():
+    """Инструмент попадает в белый список только вместе с live-проверкой (офлайн-тест)."""
+    from test_live import SMOKE_ARGS, SMOKE_FIELD
+
+    assert set(SMOKE_ARGS) == READ_ONLY_TOOLS
+    assert set(SMOKE_FIELD) == READ_ONLY_TOOLS
 
 
 @pytest.mark.parametrize(

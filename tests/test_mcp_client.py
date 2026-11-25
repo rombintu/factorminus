@@ -126,9 +126,11 @@ def test_sse_picks_matching_id():
 
 def test_non_json_text_returned_as_string():
     server = FakeServer()
-    server.tool_results["invest_get_news"] = {"content": [{"type": "text", "text": "просто текст"}]}
+    server.tool_results["invest_find_instrument"] = {
+        "content": [{"type": "text", "text": "просто текст"}]
+    }
     client, _ = make(server)
-    assert client.call_tool("invest_get_news", {}) == "просто текст"
+    assert client.call_tool("invest_find_instrument", {}) == "просто текст"
 
 
 def test_is_error_raises():

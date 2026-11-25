@@ -5,11 +5,19 @@ from datetime import timedelta
 import pytest
 
 from factorminus.config import load_settings
-from factorminus.ingest.parse import MSK, parse_asset, parse_brand, parse_candles, parse_instrument
+from factorminus.ingest.parse import (
+    MSK,
+    parse_asset,
+    parse_brand,
+    parse_candles,
+    parse_instrument,
+    parse_risk_rates,
+)
 from factorminus.ingest.pipeline import candle_args, candle_windows
 from factorminus.ingest.universe import UniverseEntry, instrument_args
 from factorminus.iss import fetch_index_weights
 from factorminus.mcp.client import McpClient
+from factorminus.mcp.errors import McpError
 
 pytestmark = pytest.mark.live
 
@@ -27,6 +35,82 @@ def client():
         pytest.skip("TINVEST_TOKEN не задан")
     with McpClient(settings) as c:
         yield c
+
+
+# --- smoke каждого инструмента белого списка ---
+# Минимальные аргументы. "{asset_uid}", "{brand_uid}", "{from}", "{to}" подставляет фикстура
+# `smoke_ids` (uid берутся из ответа для SBER_TQBR, даты — последние 30 дней).
+# Ответы не печатаются и не сохраняются: проверяется только наличие одного поля.
+SMOKE_ARGS: dict[str, dict] = {
+    "invest_find_instrument": {"query": "SBER", "responseView": ["IDENTIFIERS"]},
+    "invest_get_share": instrument_args(UniverseEntry(id="SBER_TQBR", kind="share", role="share")),
+    "invest_get_etf": instrument_args(
+        UniverseEntry(id="TMOS_TQBR", kind="etf", role="index_fund", index="MOEXBC")
+    ),
+    "invest_get_bond": instrument_args(
+        UniverseEntry(id="SU26238RMFS4_TQOB", kind="bond", role="ofz")
+    ),
+    "invest_get_currency": instrument_args(
+        UniverseEntry(id="USD000UTSTOM_CETS", kind="currency", role="money_fund")
+    ),
+    "invest_get_asset": {"id": "{asset_uid}"},
+    "invest_get_brand": {"id": "{brand_uid}"},
+    "invest_get_candles": candle_args("SBER_TQBR", "{from}", "{to}"),
+    "invest_get_risk_rates": {"instrumentId": ["SBER_TQBR"]},
+}
+
+
+def _risk_levels(payload):
+    rates = parse_risk_rates(payload)
+    return rates and (rates[0]["long"] or rates[0]["short"])
+
+
+# Одно характерное поле ответа; пустое значение — провал (так ловится пустой ответ).
+SMOKE_FIELD = {
+    "invest_find_instrument": lambda p: (p.get("instruments") or [{}])[0].get("ticker"),
+    "invest_get_share": lambda p: parse_instrument(p, "share")["asset_uid"],
+    "invest_get_etf": lambda p: parse_instrument(p, "etf")["asset_uid"],
+    "invest_get_bond": lambda p: parse_instrument(p, "bond")["maturity_date"],
+    "invest_get_currency": lambda p: parse_instrument(p, "currency")["ticker"],
+    "invest_get_asset": lambda p: parse_asset(p)["brand_uid"],
+    "invest_get_brand": lambda p: parse_brand(p)["name"],
+    "invest_get_candles": lambda p: parse_candles(p),
+    "invest_get_risk_rates": _risk_levels,
+}
+
+
+@pytest.fixture(scope="module")
+def smoke_ids(client):
+    from datetime import datetime
+
+    share = parse_instrument(
+        client.call_tool("invest_get_share", SMOKE_ARGS["invest_get_share"]), "share"
+    )
+    asset = parse_asset(client.call_tool("invest_get_asset", {"id": share["asset_uid"]}))
+    today = datetime.now(MSK).date()
+    ((frm, to),) = candle_windows(today - timedelta(days=30), today)
+    return {"asset_uid": share["asset_uid"], "brand_uid": asset["brand_uid"], "from": frm, "to": to}
+
+
+def _fill(value, ids):
+    if isinstance(value, str) and value.startswith("{") and value.endswith("}"):
+        return ids[value[1:-1]]
+    return value
+
+
+@pytest.mark.parametrize("tool", sorted(SMOKE_ARGS))
+def test_tool_smoke(client, smoke_ids, tool):
+    args = {k: _fill(v, smoke_ids) for k, v in SMOKE_ARGS[tool].items()}
+    try:
+        payload = client.call_tool(tool, args)
+    except McpError as e:  # сообщение сервера об ошибке, без данных ответа
+        pytest.fail(f"{tool}: {type(e).__name__}: {e}", pytrace=False)
+    try:
+        ok = bool(SMOKE_FIELD[tool](payload))
+    except (KeyError, TypeError, ValueError, AttributeError, IndexError) as e:
+        pytest.fail(f"{tool}: ответ не разобран ({type(e).__name__})", pytrace=False)
+    if not ok:
+        pytest.fail(f"{tool}: характерное поле пустое", pytrace=False)
 
 
 @pytest.mark.parametrize("tool,kind,iid", CASES, ids=[c[2] for c in CASES])
