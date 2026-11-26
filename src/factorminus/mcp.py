@@ -52,6 +52,15 @@ class Mcp:
     def __repr__(self):
         return f"Mcp({self.url!r})"
 
+    def close(self):
+        self.http.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
     def call(self, tool: str, args: dict | None = None):
         """Вызвать инструмент и вернуть разобранный JSON из result.content."""
         if tool not in ALLOWED:
@@ -110,9 +119,19 @@ class Mcp:
                 continue
             if resp.status_code == 429 or resp.status_code >= 500:
                 problem = f"HTTP {resp.status_code}"
+                if retry_after := self._retry_after(resp):
+                    time.sleep(retry_after)
                 continue
             return self._check(resp)
         raise McpError(f"{body.get('method')}: {problem}, {ATTEMPTS} попытки")
+
+    @staticmethod
+    def _retry_after(resp: httpx.Response) -> float:
+        """Пауза из Retry-After (в секундах), но не больше 5 с: иначе лимит попыток гаснет."""
+        try:
+            return min(float(resp.headers.get("retry-after", "")), 5.0)
+        except ValueError:
+            return 0.0
 
     def _check(self, resp):
         if resp.status_code == 404 and self.session:

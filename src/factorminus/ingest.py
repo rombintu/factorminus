@@ -125,7 +125,7 @@ def load_candles(mcp, conn, iid: str, since: str) -> int:
     """Дневные свечи с since; при повторном запуске только с последнего сохранённого дня."""
     last = conn.execute("SELECT max(date) FROM candles WHERE instrument_id=?", (iid,)).fetchone()[0]
     args = {"instrumentId": iid, "interval": "CANDLE_INTERVAL_DAY", "to": now()}
-    if last and (date.today() - date.fromisoformat(last)).days < MAX_WINDOW_DAYS:
+    if last and (datetime.now(UTC).date() - date.fromisoformat(last)).days < MAX_WINDOW_DAYS:
         args["from"] = f"{last}T00:00:00Z"  # последний день перезаписывается: мог быть неполным
     else:
         args["limit"] = 2400

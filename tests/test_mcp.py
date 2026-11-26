@@ -2,6 +2,7 @@ import httpx
 import pytest
 from conftest import TOKEN, FakeServer, client
 
+from factorminus import mcp
 from factorminus.mcp import McpError
 
 SHARE = {"instrument": {"ticker": "SBER", "classCode": "TQBR"}}
@@ -73,3 +74,20 @@ def test_network_error_is_friendly():
 
     with pytest.raises(McpError, match="сеть"):
         client(down).call("invest_get_share", {})
+
+
+def test_context_manager_closes_client():
+    server = FakeServer(tools())
+    with client(server) as mcp:
+        assert not mcp.http.is_closed
+        mcp.call("invest_get_share", {})
+    assert mcp.http.is_closed
+
+
+def test_retry_after_on_429_is_respected(monkeypatch):
+    sleeps = []
+    monkeypatch.setattr(mcp.time, "sleep", sleeps.append)
+    server = FakeServer(tools())
+    server.fail = [(429, {"Retry-After": "2"}), (429, {"Retry-After": "bogus"})]
+    assert client(server).call("invest_get_share", {}) == SHARE
+    assert 2.0 in sleeps  # bogus-заголовок даёт 0 и не падает
