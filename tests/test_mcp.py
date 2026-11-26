@@ -91,3 +91,10 @@ def test_retry_after_on_429_is_respected(monkeypatch):
     server.fail = [(429, {"Retry-After": "2"}), (429, {"Retry-After": "bogus"})]
     assert client(server).call("invest_get_share", {}) == SHARE
     assert 2.0 in sleeps  # bogus-заголовок даёт 0 и не падает
+
+
+def test_negative_retry_after_does_not_crash(monkeypatch):
+    monkeypatch.setattr(mcp.time, "sleep", lambda s: None if s >= 0 else 1 / 0)
+    server = FakeServer(tools())
+    server.fail = [(429, {"Retry-After": "-1"})]
+    assert client(server).call("invest_get_share", {}) == SHARE

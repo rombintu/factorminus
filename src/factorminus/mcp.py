@@ -127,9 +127,9 @@ class Mcp:
 
     @staticmethod
     def _retry_after(resp: httpx.Response) -> float:
-        """Пауза из Retry-After (в секундах), но не больше 5 с: иначе лимит попыток гаснет."""
+        """Пауза из Retry-After (в секундах), от 0 до 5 с: иначе лимит попыток гаснет."""
         try:
-            return min(float(resp.headers.get("retry-after", "")), 5.0)
+            return max(0.0, min(float(resp.headers.get("retry-after", "")), 5.0))
         except ValueError:
             return 0.0
 
