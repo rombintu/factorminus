@@ -1,0 +1,76 @@
+id,kind,role,index,note
+TMOS_TQBR,etf,index_fund,IMOEX,Т-Капитал Индекс МосБиржи (Крупнейшие компании РФ)
+SBMX_TQBR,etf,index_fund,IMOEX,Первая — Фонд Топ Российских акций
+EQMX_TQBR,etf,index_fund,IMOEX,ВИМ — Индекс МосБиржи
+AMIX_TQBR,etf,index_fund,IMOEX,АТОН — Индекс МосБиржи (найден через find_instrument)
+TGLD_TQBR,etf,gold_fund,,Т-Капитал Золото
+LQDT_TQBR,etf,money_fund,,ВИМ Ликвидность
+AKMM_TQBR,etf,money_fund,,Альфа-Капитал Денежный рынок
+TBRU_TQBR,etf,bond_fund,,Т-Капитал Облигации
+SBGB_TQBR,etf,bond_fund,,Первая Гособлигации
+TRUR_TQBR,etf,active_fund,,Т-Капитал Вечный портфель
+DIVD_TQBR,etf,active_fund,,Дивидендные акции
+AKME_TQBR,etf,active_fund,,Альфа-Капитал Управляемые акции
+SBER_TQBR,share,share,,банки и финансы
+SBERP_TQBR,share,share,,банки и финансы
+VTBR_TQBR,share,share,,банки и финансы
+T_TQBR,share,share,,банки и финансы
+MOEX_TQBR,share,share,,банки и финансы
+LKOH_TQBR,share,share,,нефть и газ
+ROSN_TQBR,share,share,,нефть и газ
+TATN_TQBR,share,share,,нефть и газ
+TATNP_TQBR,share,share,,нефть и газ
+GAZP_TQBR,share,share,,нефть и газ
+NVTK_TQBR,share,share,,нефть и газ
+SNGS_TQBR,share,share,,нефть и газ
+SNGSP_TQBR,share,share,,нефть и газ
+SIBN_TQBR,share,share,,нефть и газ
+TRNFP_TQBR,share,share,,нефть и газ
+GMKN_TQBR,share,share,,металлы и добыча
+CHMF_TQBR,share,share,,металлы и добыча
+NLMK_TQBR,share,share,,металлы и добыча
+MAGN_TQBR,share,share,,металлы и добыча
+PLZL_TQBR,share,share,,металлы и добыча
+ALRS_TQBR,share,share,,металлы и добыча
+RUAL_TQBR,share,share,,металлы и добыча
+PHOR_TQBR,share,share,,удобрения
+YDEX_TQBR,share,share,,технологии и интернет
+OZON_TQBR,share,share,,технологии и интернет
+HEAD_TQBR,share,share,,технологии и интернет
+X5_TQBR,share,share,,ритейл
+MGNT_TQBR,share,share,,ритейл
+MTSS_TQBR,share,share,,телеком и группа АФК
+RTKM_TQBR,share,share,,телеком и группа АФК
+AFKS_TQBR,share,share,,телеком и группа АФК
+PIKK_TQBR,share,share,,девелоперы
+SMLT_TQBR,share,share,,девелоперы
+IRAO_TQBR,share,share,,электроэнергетика
+HYDR_TQBR,share,share,,электроэнергетика
+SGZH_TQBR,share,share,,'для слоя 3: группа АФК Система (лесопром)'
+ETLN_TQBR,share,share,,'для слоя 3: группа АФК Система (девелопер)'
+MSNG_TQBR,share,share,,'для слоя 3: группа Газпром (Мосэнерго)'
+OGKB_TQBR,share,share,,'для слоя 3: группа Газпром (ОГК-2)'
+TGKA_TQBR,share,share,,'для слоя 3: группа Газпром (ТГК-1)'
+CBOM_TQBR,share,share,,банки и финансы; добавлена для 100% покрытия IMOEX
+SVCB_TQBR,share,share,,банки и финансы; добавлена для 100% покрытия IMOEX
+DOMRF_TQBR,share,share,,банки и финансы; добавлена для 100% покрытия IMOEX
+BSPB_TQBR,share,share,,банки и финансы; добавлена для 100% покрытия IMOEX
+RENI_TQBR,share,share,,банки и финансы (страхование); добавлена для 100% покрытия IMOEX
+AFLT_TQBR,share,share,,транспорт; добавлена для 100% покрытия IMOEX
+FLOT_TQBR,share,share,,транспорт; добавлена для 100% покрытия IMOEX
+CNRU_TQBR,share,share,,технологии и интернет; добавлена для 100% покрытия IMOEX
+POSI_TQBR,share,share,,технологии и интернет; добавлена для 100% покрытия IMOEX
+VKCO_TQBR,share,share,,технологии и интернет; добавлена для 100% покрытия IMOEX
+ENPG_TQBR,share,share,,металлы и добыча; добавлена для 100% покрытия IMOEX
+UGLD_TQBR,share,share,,металлы и добыча; добавлена для 100% покрытия IMOEX
+MDMG_TQBR,share,share,,здравоохранение; добавлена для 100% покрытия IMOEX
+RAGR_TQBR,share,share,,сельское хозяйство; добавлена для 100% покрытия IMOEX
+SU26236RMFS8_TQOB,bond,ofz,,"ОФЗ 26236, короткая (2028)"
+SU26233RMFS5_TQOB,bond,ofz,,"ОФЗ 26233, средняя (2035)"
+SU26238RMFS4_TQOB,bond,ofz,,"ОФЗ 26238, длинная (2041)"
+RU000A101012_TQCB,bond,corp_bond,,АФК Система БО 001P-12 (2029)
+RU000A1078S8_TQCB,bond,corp_bond,,МТС 002P-02 (2028)
+RU000A105SP3_TQCB,bond,corp_bond,,Сегежа 003P-02R (2038)
+RU000A105VU7_TQCB,bond,corp_bond,,"эмитент риска: МКПАО Эталон Груп; Эталон-Финанс 002Р-01 (2038); выпущена через финансовую «дочку», эмитент риска — материнская компания"
+RU000A0JXQ44_TQCB,bond,corp_bond,,"РЖД БО-001P-02R (2037), вне группы АФК"
+RU000A107050_TQCB,bond,corp_bond,,"эмитент риска: Газпром; Газпром капитал БО-002Р-09 (2028), вне группы АФК; выпущена через финансовую «дочку», эмитент риска — материнская компания"
