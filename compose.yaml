@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    image: factorminus
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./data:/app/data  # база видна на диске: data/fm.sqlite
+    command: ["fm", "demo"]
