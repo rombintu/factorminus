@@ -6,6 +6,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # gitleaks проверяет всю историю
+      - name: gitleaks
+        run: docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.28.0 git /repo --redact --no-banner
       - uses: astral-sh/setup-uv@v6
         with:
           version: "0.13.9"
