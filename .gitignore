@@ -4,3 +4,21 @@ AI
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# Project
+.env
+data/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+*.egg-info/
+build/
+dist/
+
+# Внутренние документы: ТЗ, отчёты, контекст. Лежат только локально
+docs/tz/
+docs/reports/
+docs/CONTEXT.md

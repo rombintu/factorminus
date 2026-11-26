@@ -1,0 +1,44 @@
+{
+  "contract_version": "1.0",
+  "verdict": "reduces_skew",
+  "severity": "positive",
+  "headline": "Покупка снижает долю нефти в портфеле с 46% до 38%",
+  "facts": [
+    "Корреляция TGLD с портфелем за 12 мес: −0,05",
+    "Доля фактора «золото» станет 9%"
+  ],
+  "overlaps": [],
+  "factors_before": {
+    "oil_gas": 46.0,
+    "banks": 20.0,
+    "broad_market_ru": 28.0,
+    "cash": 6.0
+  },
+  "factors_after": {
+    "oil_gas": 38.0,
+    "banks": 17.0,
+    "broad_market_ru": 31.0,
+    "gold": 9.0,
+    "cash": 5.0
+  },
+  "issuers_before": {
+    "Лукойл": 12.0
+  },
+  "issuers_after": {
+    "Лукойл": 10.0
+  },
+  "correlation_to_portfolio": -0.05,
+  "flags": [],
+  "trace": {
+    "echelon": "rules",
+    "rules_fired": [
+      "factor_skew_down"
+    ],
+    "laya_used": false,
+    "latency_ms": 15
+  },
+  "data_as_of": {
+    "candles": "2026-11-21",
+    "index_weights": "2026-11-20"
+  }
+}

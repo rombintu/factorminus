@@ -1,0 +1,35 @@
+{
+  "contract_version": "1.0",
+  "verdict": "neutral",
+  "severity": "none",
+  "headline": "Значимого пересечения с портфелем не обнаружено",
+  "facts": [
+    "Корреляция MGNT с портфелем за 12 мес: 0,31"
+  ],
+  "overlaps": [],
+  "factors_before": {
+    "broad_market_ru": 60.0,
+    "banks": 30.0,
+    "cash": 10.0
+  },
+  "factors_after": {
+    "broad_market_ru": 57.0,
+    "banks": 28.0,
+    "consumer": 8.0,
+    "cash": 7.0
+  },
+  "issuers_before": {},
+  "issuers_after": {},
+  "correlation_to_portfolio": 0.31,
+  "flags": [],
+  "trace": {
+    "echelon": "laya",
+    "rules_fired": [],
+    "laya_used": true,
+    "latency_ms": 41
+  },
+  "data_as_of": {
+    "candles": "2026-11-21",
+    "index_weights": "2026-11-20"
+  }
+}

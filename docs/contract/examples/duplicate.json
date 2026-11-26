@@ -1,0 +1,46 @@
+{
+  "contract_version": "1.0",
+  "verdict": "duplicate",
+  "severity": "warning",
+  "headline": "SBMX повторяет тот же индекс, что ваш TMOS",
+  "facts": [
+    "Корреляция дневных доходностей за 12 мес: 0,92",
+    "После покупки 100% акций в портфеле — один индекс"
+  ],
+  "overlaps": [
+    {
+      "instrument_id": "TMOS_TQBR",
+      "kind": "same_index",
+      "correlation": 0.92,
+      "duplicate_score": 0.98
+    }
+  ],
+  "factors_before": {
+    "broad_market_ru": 90.0,
+    "cash": 10.0
+  },
+  "factors_after": {
+    "broad_market_ru": 93.3,
+    "cash": 6.7
+  },
+  "issuers_before": {
+    "Сбер": 13.1
+  },
+  "issuers_after": {
+    "Сбер": 13.5
+  },
+  "correlation_to_portfolio": 0.92,
+  "flags": [],
+  "trace": {
+    "echelon": "rules",
+    "rules_fired": [
+      "same_index"
+    ],
+    "laya_used": false,
+    "latency_ms": 12
+  },
+  "data_as_of": {
+    "candles": "2026-11-21",
+    "index_weights": "2026-11-20"
+  }
+}
