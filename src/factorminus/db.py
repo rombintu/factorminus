@@ -31,6 +31,30 @@ def upsert(conn: sqlite3.Connection, table: str, row: dict) -> None:
     conn.execute(sql, list(row.values()))
 
 
+def market_id(conn: sqlite3.Connection, index_id: str) -> str | None:
+    """Рынок для индекса: строка instruments с kind='index' и этим index_id."""
+    sql = "SELECT id FROM instruments WHERE kind = 'index' AND index_id = ?"
+    row = conn.execute(sql, (index_id,)).fetchone()
+    return row[0] if row else None
+
+
+def index_members(conn: sqlite3.Connection, index_id: str) -> tuple[str | None, list[tuple]]:
+    """Веса на последнюю дату: (дата, [(instrument_id или None, ticker, weight)]).
+
+    Вес сопоставляется с акцией по instruments.ticker; бумаги нет во вселенной — None.
+    """
+    day = conn.execute(
+        "SELECT max(date) FROM index_weights WHERE index_id = ?", (index_id,)
+    ).fetchone()[0]
+    rows = conn.execute(
+        "SELECT i.id, w.ticker, w.weight FROM index_weights w "
+        "LEFT JOIN instruments i ON i.ticker = w.ticker AND i.kind = 'share' "
+        "WHERE w.index_id = ? AND w.date = ? ORDER BY w.weight DESC",
+        (index_id, day),
+    )
+    return day, [tuple(r) for r in rows]
+
+
 def stats(conn: sqlite3.Connection) -> list[str]:
     """Строки по таблицам отдельно для real и synth, диапазон дат свечей и весов."""
     lines = []

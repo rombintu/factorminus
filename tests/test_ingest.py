@@ -5,16 +5,24 @@ from conftest import FakeServer, client
 
 from factorminus import db, ingest
 
+
+def row(iid, kind="share", role="share", index="", issuer=""):
+    return {"id": iid, "kind": kind, "role": role, "index": index, "issuer": issuer, "note": ""}
+
+
 ROWS = [
-    {"id": "SYNA_TQBR", "kind": "share", "role": "share", "index": "", "note": ""},
-    {"id": "SYNAP_TQBR", "kind": "share", "role": "share", "index": "", "note": ""},
-    {"id": "SYNF_TQBR", "kind": "etf", "role": "index_fund", "index": "IMOEX", "note": ""},
-    {"id": "GONE_TQBR", "kind": "share", "role": "share", "index": "", "note": ""},
+    row("IMOEX_TQBR", "index", "market", "IMOEX"),
+    row("SYNA_TQBR"),
+    row("SYNAP_TQBR", issuer="  ПАО  Особый   эмитент "),
+    row("SYNF_TQBR", "etf", "index_fund", "IMOEX"),
+    row("GONE_TQBR"),
 ]
+ROWS[0]["note"] = "Индекс МосБиржи"
 
 
 def card(args):
     iid = args["instrumentId"]
+    assert iid != "IMOEX_TQBR", "у индекса нет карточки"
     if iid == "GONE_TQBR":
         return Exception('{"type":"NOT_FOUND","message":"Instrument not found"}')
     ticker, cls = iid.split("_")
@@ -42,6 +50,7 @@ def candles(args):
 
 
 def risk(args):
+    assert "IMOEX_TQBR" not in args["instrumentId"], "у индекса нет ставок риска"
     rows = [{"instrumentUid": f"uid-{i}", "shortRiskRates": [{"riskLevelCode": "HIGH", "value": {"value": "0.1"}}, {"riskLevelCode": "STANDARD", "value": {"value": "0.2"}}], "longRiskRates": []}
             for i in args["instrumentId"]]  # fmt: skip
     return {"instrumentRiskRates": rows}
@@ -56,7 +65,12 @@ def server():
             "invest_get_asset": lambda a: {
                 "asset": {"name": a["id"], "brand": {"uid": "b-" + a["id"]}}
             },
-            "invest_get_brand": lambda a: {"uid": a["id"], "name": "Бренд", "sector": "financial"},
+            "invest_get_brand": lambda a: {
+                "uid": a["id"],
+                "name": "Бренд",
+                "company": " ПАО  Бренд",
+                "sector": "financial",
+            },
             "invest_get_candles": candles,
             "invest_get_risk_rates": risk,
         }
@@ -71,10 +85,10 @@ def counts(conn):
 def test_ingest_fills_db_and_rerun_does_not_duplicate(server):
     conn = db.connect(":memory:")
     summary = ingest.run(client(server), conn, ROWS, log=lambda *a: None)
-    assert summary["instruments"] == 3 and summary["brands"] == 2
+    assert summary["instruments"] == 4 and summary["brands"] == 2
     assert len(summary["errors"]) == 1 and "GONE_TQBR" in summary["errors"][0]
     first = counts(conn)
-    assert first["instruments"] == 3 and first["brands"] == 2
+    assert first["instruments"] == 4 and first["brands"] == 2
     assert conn.execute("SELECT min(date) FROM candles").fetchone()[0] == "2020-01-01"
     row = conn.execute("SELECT * FROM instruments WHERE id='SYNA_TQBR'").fetchone()
     assert (
@@ -84,6 +98,15 @@ def test_ingest_fills_db_and_rerun_does_not_duplicate(server):
         and row["dshort"] == 0.2
     )
     assert row["raw_json"] and row["source"] == "mcp"
+    issuers = dict(conn.execute("SELECT id, issuer FROM instruments"))
+    assert issuers == {"IMOEX_TQBR": None, "SYNA_TQBR": "ПАО Бренд",
+                       "SYNAP_TQBR": "ПАО Особый эмитент", "SYNF_TQBR": None}  # fmt: skip
+    index = conn.execute("SELECT * FROM instruments WHERE id='IMOEX_TQBR'").fetchone()
+    assert (index["ticker"], index["kind"], index["role"], index["index_id"], index["name"]) == (
+        "IMOEX", "index", "market", "IMOEX", "Индекс МосБиржи")  # fmt: skip
+    assert db.market_id(conn, "IMOEX") == "IMOEX_TQBR"
+    imoex = "SELECT count(*) FROM candles WHERE instrument_id='IMOEX_TQBR'"
+    assert conn.execute(imoex).fetchone()[0] > 0
 
     ingest.run(client(server), conn, ROWS, log=lambda *a: None)
     assert counts(conn) == first

@@ -11,7 +11,7 @@ SEED = 42
 DAYS = 1500
 END = date(2026, 11, 20)  # фиксированная дата: одинаковый seed даёт одинаковые данные
 SHOCKS = [(60, 30), (560, 20), (1150, 150)]  # (первый торговый день, длина)
-VOL = {"market": 0.011, "oil": 0.011, "banks": 0.01, "metals": 0.012, "tech": 0.014,
+VOL = {"market": 0.009, "oil": 0.011, "banks": 0.01, "metals": 0.012, "tech": 0.014,
        "rate": 0.0012, "gold": 0.009, "group": 0.01}  # fmt: skip
 
 # бренд: (название, компания, сектор, описание)
@@ -68,6 +68,7 @@ PAPERS = {
     "MONEY": ("money", "etf", "money_fund", "Синт Ликвидность"),
     "OFZ2": ("ofz", "bond", "ofz", "ОФЗ-Синт 2 года"),
     "OFZ8": ("ofz", "bond", "ofz", "ОФЗ-Синт 8 лет"),
+    "MARKET": (None, "index", "market", "Синт-индекс SYNIDX"),  # рынок: доходность индекса
 }
 WEIGHTS = {"OIL1": 14, "OIL2": 10, "OIL3": 8, "OIL4": 5, "OIL5": 3, "SBER": 15, "SBERP": 2,
            "VTB": 5, "MET": 10, "TECH": 12, "HOLD": 8, "HTEL": 8}  # fmt: skip
@@ -86,6 +87,7 @@ def trading_days() -> list[str]:
 
 DATES = trading_days()
 EXPECTED = {
+    "market": "SYN_MARKET",
     "index_twins": ["SYN_IDXA", "SYN_IDXB"],
     "twin_min_corr": 0.95,
     "hidden_duplicate": "SYN_CAPF",  # тот же индекс, но без слова «индекс»
@@ -117,7 +119,7 @@ def simulate(seed: int = SEED) -> dict[str, np.ndarray]:
     shock = np.zeros(DAYS, bool)
     for start, n in SHOCKS:
         shock[start : start + n] = True
-    f["market"] = np.where(shock, rng.normal(-0.003, 0.03, DAYS), f["market"])
+    f["market"] = np.where(shock, rng.normal(-0.006, 0.05, DAYS), f["market"])
     stress = np.where(shock, rng.normal(0, 0.025, DAYS), 0.0)  # системный стресс банков
 
     def stock(beta, noise, **loads):
@@ -136,6 +138,7 @@ def simulate(seed: int = SEED) -> dict[str, np.ndarray]:
     r["HDEV"] = stock(1.0, 0.014, group=0.5, rate=-4)
     r["HTELB"] = -3 * f["rate"] + 0.05 * f["group"] + rng.normal(0.0004, 0.0006, DAYS)
     index = sum(w / 100 * r[p] for p, w in WEIGHTS.items())
+    r["MARKET"] = index
     r["IDXA"] = index + rng.normal(0, 0.0007, DAYS)
     r["IDXB"] = index + rng.normal(0, 0.0008, DAYS)
     r["CAPF"] = index + rng.normal(0, 0.0012, DAYS)
@@ -182,13 +185,16 @@ def write_paper(conn, pid: str, r: np.ndarray, stamp: str) -> int:
     high = np.maximum(open_, close) * (1 + spread)
     low = np.minimum(open_, close) * (1 - spread)
     volume = (1e6 * (1 + 20 * np.abs(r))).round()
-    iid = f"SYN_{pid}"
+    iid = f"SYN_{pid}"  # ticker = id: так веса SYNIDX сопоставляются с бумагами
+    index_id = "SYNIDX" if role in ("index_fund", "market") else None
+    issuer = BRANDS[brand][1] if kind in ("share", "bond") else None
+    brand_uid = f"SYN_BRAND_{brand.upper()}" if brand else None
     conn.execute(
         "INSERT INTO instruments (id, ticker, class_code, kind, role, index_id, name, asset_name, "
-        "lot, currency, brand_uid, first_candle, maturity, source, updated_at) "
-        "VALUES (?, ?, 'SYN', ?, ?, ?, ?, ?, 1, 'rub', ?, ?, ?, 'synth', ?)",
-        (iid, pid, kind, role, "SYNIDX" if role == "index_fund" else None, name, asset,
-         f"SYN_BRAND_{brand.upper()}", dates[0], MATURITY.get(pid), stamp),
+        "lot, currency, brand_uid, issuer, first_candle, maturity, source, updated_at) "
+        "VALUES (?, ?, 'SYN', ?, ?, ?, ?, ?, 1, 'rub', ?, ?, ?, ?, 'synth', ?)",
+        (iid, iid, kind, role, index_id, name, asset, brand_uid, issuer, dates[0],
+         MATURITY.get(pid), stamp),
     )  # fmt: skip
     rows = zip([iid] * len(dates), dates, *(np.round(x, 4).tolist() for x in (open_, high, low, close)),
                volume.tolist())  # fmt: skip

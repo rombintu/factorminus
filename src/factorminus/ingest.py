@@ -47,10 +47,13 @@ def run(mcp, conn, rows, since="2020-01-01", log=print) -> dict:
     loaded = []
     for row in rows:
         try:
-            summary["brands"] += load_instrument(mcp, conn, row, known_brands)
+            if row["kind"] == "index":
+                save_index(conn, row)
+            else:
+                summary["brands"] += load_instrument(mcp, conn, row, known_brands)
+                loaded.append(row["id"])  # у индекса нет ставок риска
             summary["candles"] += load_candles(mcp, conn, row["id"], since)
             summary["instruments"] += 1
-            loaded.append(row["id"])
             log(f"  {row['id']}: ok")
         except Exception as e:  # noqa: BLE001 — любая ошибка бумаги идёт в сводку
             summary["errors"].append(f"{row['id']}: {e}")
@@ -79,17 +82,33 @@ def load_instrument(mcp, conn, row, known_brands) -> int:
         save_brand(conn, mcp.call("invest_get_brand", {"id": brand_uid}))
         known_brands.add(brand_uid)
         new_brand = 1
+    company = conn.execute("SELECT company FROM brands WHERE uid=?", (brand_uid,)).fetchone()
     db.upsert(conn, "instruments", {
         "id": row["id"], "ticker": inst.get("ticker"), "class_code": inst.get("classCode"),
         "kind": row["kind"], "role": row["role"], "index_id": row.get("index") or None,
         "name": inst.get("name"), "asset_name": asset.get("name"), "isin": inst.get("isin"),
         "lot": inst.get("lot"), "currency": inst.get("currency"),
         "asset_uid": inst.get("assetUid"), "brand_uid": brand_uid, "uid": inst.get("uid"),
+        "issuer": issuer(row, company[0] if company else None),
         "first_candle": day(inst.get("first1dayCandleDate")), "maturity": day(inst.get("maturityDate")),
         "dlong": num(inst.get("dlongClient")), "dshort": num(inst.get("dshortClient")),
         "source": "mcp", "raw_json": json.dumps(card, ensure_ascii=False), "updated_at": now(),
     })  # fmt: skip
     return new_brand
+
+
+def save_index(conn, row) -> None:
+    """Индекс: карточки, бренда и ставок риска нет, только строка и свечи."""
+    db.upsert(conn, "instruments", {
+        "id": row["id"], "ticker": row["id"].split("_")[0], "kind": "index", "role": row["role"],
+        "index_id": row["index"], "name": row["note"], "source": "mcp", "updated_at": now(),
+    })  # fmt: skip
+
+
+def issuer(row, company: str | None) -> str | None:
+    """Кто несёт риск: ручное значение из universe.csv, иначе компания бренда у акций и облигаций."""
+    name = row.get("issuer") or (company if row["kind"] in ("share", "bond") else None)
+    return " ".join(name.split()) or None if name else None
 
 
 def save_brand(conn, brand: dict) -> None:

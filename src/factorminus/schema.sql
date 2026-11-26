@@ -5,9 +5,9 @@ CREATE TABLE IF NOT EXISTS instruments (
     id TEXT PRIMARY KEY,          -- TICKER_CLASSCODE или SYN_*
     ticker TEXT,
     class_code TEXT,
-    kind TEXT,                    -- share | etf | bond | currency
+    kind TEXT,                    -- share | etf | bond | currency | index
     role TEXT,                    -- из universe.csv: index_fund, ofz, ...
-    index_id TEXT,                -- индекс, который повторяет фонд
+    index_id TEXT,                -- индекс фонда; у kind='index' — сам индекс (рынок)
     name TEXT,
     asset_name TEXT,              -- полное название актива (у фондов: «БПИФ ... Индекс МосБиржи»)
     isin TEXT,
@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS instruments (
     currency TEXT,
     asset_uid TEXT,
     brand_uid TEXT,
+    issuer TEXT,                  -- кто несёт риск; у фондов, индексов и валют NULL
     uid TEXT,
     first_candle TEXT,            -- YYYY-MM-DD
     maturity TEXT,                -- YYYY-MM-DD, у облигаций

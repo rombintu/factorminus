@@ -91,3 +91,27 @@ def test_group_present_and_missing_id_absent(conn):
     group = E["group"]
     assert {group["parent"], *group["members"]} <= ids
     assert E["missing_id"] not in ids
+
+
+def test_market_follows_index_and_worst_days_fall_in_shocks(conn):
+    assert db.market_id(conn, "SYNIDX") == E["market"]
+    dates, market = returns(conn, E["market"])
+    assert corr(returns(conn, E["index_twins"][0])[1], market) >= 0.99
+    worst = np.argsort(market)[: int(len(market) * 0.05)]
+    in_shock = [any(a <= dates[i] <= b for a, b in E["shocks"]) for i in worst]
+    assert np.mean(in_shock) >= 0.8
+
+
+def test_issuer_shared_by_same_company(conn):
+    issuer = dict(conn.execute("SELECT id, issuer FROM instruments"))
+    assert issuer["SYN_SBER"] == issuer["SYN_SBERP"] == "ПАО Синтбанк"
+    assert issuer["SYN_HTEL"] == issuer["SYN_HTELB"]
+    assert issuer["SYN_OFZ2"] == issuer["SYN_OFZ8"] == "Минфин Синт"
+    assert issuer["SYN_IDXA"] is None and issuer[E["market"]] is None
+
+
+def test_index_members_matched_to_instruments(conn):
+    day, members = db.index_members(conn, "SYNIDX")
+    assert day == synth.DATES[-1] and len(members) == 12
+    assert all(iid == ticker for iid, ticker, _ in members)
+    assert sum(w for _, _, w in members) == pytest.approx(100)
