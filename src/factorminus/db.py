@@ -1,0 +1,45 @@
+"""SQLite: одна база data/fm.sqlite, реальные и синтетические данные в одних таблицах."""
+
+import sqlite3
+from pathlib import Path
+
+SCHEMA = Path(__file__).with_name("schema.sql")
+# Ключевая колонка таблицы: по префиксу SYN отличаем синтетику от реальных данных.
+KEYS = {
+    "instruments": "id",
+    "brands": "uid",
+    "candles": "instrument_id",
+    "index_weights": "index_id",
+}
+
+
+def connect(path) -> sqlite3.Connection:
+    if str(path) != ":memory:":
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
+    conn.executescript(SCHEMA.read_text())
+    return conn
+
+
+def upsert(conn: sqlite3.Connection, table: str, row: dict) -> None:
+    cols = ", ".join(row)
+    marks = ", ".join("?" * len(row))
+    conn.execute(f"INSERT OR REPLACE INTO {table} ({cols}) VALUES ({marks})", list(row.values()))
+
+
+def stats(conn: sqlite3.Connection) -> list[str]:
+    """Строки по таблицам отдельно для real и synth, диапазон дат свечей и весов."""
+    lines = []
+    for table, key in KEYS.items():
+        has_date = table in ("candles", "index_weights")
+        dates = "min(date), max(date)" if has_date else "NULL, NULL"
+        sql = (
+            f"SELECT CASE WHEN {key} LIKE 'SYN%' THEN 'synth' ELSE 'real' END AS src, "
+            f"count(*), {dates} FROM {table} GROUP BY src ORDER BY src"
+        )
+        rows = conn.execute(sql).fetchall() or [("-", 0, None, None)]
+        for src, n, lo, hi in rows:
+            span = f"  {lo} … {hi}" if lo else ""
+            lines.append(f"{table:<14} {src:<6} {n:>8}{span}")
+    return lines
