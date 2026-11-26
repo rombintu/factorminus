@@ -59,6 +59,8 @@ def cmd_ingest(args) -> int:
 
 def cmd_weights(args) -> None:
     rows = iss.fetch_weights()
+    if not rows:
+        raise config.ConfigError("ISS вернул пустой список весов IMOEX, попробуйте позже")
     iss.save_weights(open_db(), rows)
     print(f"IMOEX: {len(rows)} бумаг на {rows[0][1]}, сумма весов {sum(r[3] for r in rows):.2f}")
 

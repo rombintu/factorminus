@@ -5,7 +5,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from factorminus import cli, config, mcp
+from factorminus import cli, config, iss, mcp
 
 ROOT = Path(__file__).parents[1]
 
@@ -35,6 +35,12 @@ def test_call_outside_whitelist_is_rejected(monkeypatch, capsys, no_network):
     monkeypatch.setenv("TINVEST_TOKEN", "t.fake")
     assert cli.main(["call", "invest_create_order", "{}"]) == 1
     assert "белом списке" in capsys.readouterr().err
+
+
+def test_empty_iss_weights_is_friendly_error(monkeypatch, capsys, no_network):
+    monkeypatch.setattr(iss, "fetch_weights", lambda: [])
+    assert cli.main(["weights"]) == 1
+    assert "ISS" in capsys.readouterr().err
 
 
 def test_no_token_in_git_files():
