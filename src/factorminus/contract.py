@@ -1,4 +1,4 @@
-"""Контракт вердикта v1.0 (раздел 7 docs/CONTEXT.md): запрос POST /api/v1/verdict и ответ."""
+"""Контракт вердикта v1.0: запрос POST /api/v1/verdict и ответ. Примеры: docs/contract/examples/."""
 
 from enum import StrEnum
 from typing import Annotated, Literal

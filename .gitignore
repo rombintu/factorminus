@@ -17,3 +17,8 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+
+# Внутренние документы: ТЗ, отчёты, контекст. Лежат только локально
+docs/tz/
+docs/reports/
+docs/CONTEXT.md
