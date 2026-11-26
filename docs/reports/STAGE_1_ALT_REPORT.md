@@ -87,7 +87,7 @@ $ uv run pytest -m live
 
 ## Что не сделано и почему
 
-- **CI на GitHub не запускался**: push и PR только по просьбе пользователя. Локально те же шаги (`uv sync`, `make lint`, `make test`, `make docker`) проходят за 1,7 с с кэшем Docker (`real 1.72`); без кэша добавляется сборка 5–9 с. На GitHub к этому прибавится скачивание образов и пакетов.
+- **CI на GitHub** на момент основного этапа не запускался; первый прогон — в разделе «Доработки». Локально те же шаги (`uv sync`, `make lint`, `make test`, `make docker`) проходят за 1,7 с с кэшем Docker (`real 1.72`); без кэша добавляется сборка 5–9 с. На GitHub к этому прибавится скачивание образов и пакетов.
 - `brew install uv` дважды завис и упал (Homebrew Tier 3). uv 0.13.9 взят готовым бинарником в `~/.local/bin`; эта же версия закреплена в `Dockerfile` и `ci.yml`.
 
 ## Бумаги вселенной, которые не нашлись
@@ -158,4 +158,14 @@ index_weights  synth        12  2026-11-20 … 2026-11-20
 
 ### CI
 
-Ожидает разрешения на push ветки `stage-1-alt`.
+Прогон на push ветки `stage-1-alt`: https://github.com/rombintu/factorminus/actions/runs/45807307754 — **success, 27 с** (11:05:10–11:05:37 UTC), предел 3 минуты.
+
+| Шаг | Время |
+|---|---|
+| Set up job + checkout (`fetch-depth: 0`) | 3 с |
+| gitleaks v8.28.0: `77 commits scanned … no leaks found` | 2 с |
+| setup-uv + `uv sync` | 3 с |
+| `make lint` | < 1 с |
+| `make test`: `55 passed, 9 deselected in 1.26s` | 2 с |
+| `make docker` (сборка + `fm demo` в контейнере) | 10 с |
+| Post-шаги | 1 с |
