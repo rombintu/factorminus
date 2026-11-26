@@ -1,6 +1,7 @@
 """Командная строка `fm`. Ожидаемые ошибки печатаются одной строкой, без трейсбека."""
 
 import argparse
+import contextlib
 import json
 import sqlite3
 import sys
@@ -20,12 +21,14 @@ def open_mcp(args) -> Mcp:
 
 
 def cmd_synth(args) -> None:
-    counts = synth.write(open_db())
+    with contextlib.closing(open_db()) as conn:
+        counts = synth.write(conn)
     print(f"синтетика записана в {config.db_path()}: {counts}")
 
 
 def cmd_stats(args) -> None:
-    print("\n".join(db.stats(open_db())))
+    with contextlib.closing(open_db()) as conn:
+        print("\n".join(db.stats(conn)))
 
 
 def cmd_demo(args) -> None:
@@ -34,9 +37,9 @@ def cmd_demo(args) -> None:
 
 
 def cmd_check(args) -> int:
-    client = open_mcp(args)
-    missing = sorted(ALLOWED - set(client.tools()))
-    print(f"MCP {client.url}: рукопожатие ok")
+    with open_mcp(args) as client:
+        missing = sorted(ALLOWED - set(client.tools()))
+        print(f"MCP {client.url}: рукопожатие ok")
     print(f"нет на сервере: {', '.join(missing)}" if missing else "все 9 инструментов на месте")
     return 1 if missing else 0
 
@@ -47,9 +50,9 @@ def cmd_ingest(args) -> int:
     if only and len(rows) != len(only):
         unknown = only - {r["id"] for r in rows}
         raise config.ConfigError(f"нет в universe.csv: {', '.join(sorted(unknown))}")
-    client, conn = open_mcp(args), open_db()
     print(f"загрузка {len(rows)} бумаг с {args.since}")
-    s = ingest.run(client, conn, rows, since=args.since)
+    with open_mcp(args) as client, contextlib.closing(open_db()) as conn:
+        s = ingest.run(client, conn, rows, since=args.since)
     print(f"бумаги {s['instruments']}, новые бренды {s['brands']}, новые свечи {s['candles']}, "
           f"ошибки {len(s['errors'])}, время {s['seconds']} с")  # fmt: skip
     for err in s["errors"]:
@@ -61,7 +64,8 @@ def cmd_weights(args) -> None:
     rows = iss.fetch_weights()
     if not rows:
         raise config.ConfigError("ISS вернул пустой список весов IMOEX, попробуйте позже")
-    iss.save_weights(open_db(), rows)
+    with contextlib.closing(open_db()) as conn:
+        iss.save_weights(conn, rows)
     print(f"IMOEX: {len(rows)} бумаг на {rows[0][1]}, сумма весов {sum(r[3] for r in rows):.2f}")
 
 
@@ -125,6 +129,8 @@ def main(argv=None) -> int:
         print(f"ошибка: {e}", file=sys.stderr)
     except httpx.HTTPError as e:
         print(f"ошибка сети: {e}", file=sys.stderr)
+    except sqlite3.Error as e:
+        print(f"ошибка базы данных: {e}", file=sys.stderr)
     return 1
 
 

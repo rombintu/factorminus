@@ -1,6 +1,6 @@
 [project]
 name = "factorminus"
-version = "0.1.0"
+version = "0.1.1"
 description = "Фактор-минус: плашка о ложной диверсификации при покупке бумаги"
 requires-python = ">=3.12,<3.13"
 dependencies = ["httpx==0.28.1", "pydantic==2.12.5", "numpy==2.3.5", "certifi==2025.11.12"]

@@ -29,7 +29,9 @@ class FakeServer:
         body = json.loads(request.content)
         self.requests.append((request.headers, body))
         if self.fail:
-            return httpx.Response(self.fail.pop(0))
+            item = self.fail.pop(0)
+            code, headers = item if isinstance(item, tuple) else (item, {})
+            return httpx.Response(code, headers=headers)
         if "id" not in body:
             return httpx.Response(202)
         if body["method"] == "initialize":

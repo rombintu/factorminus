@@ -1,4 +1,5 @@
 import re
+import sqlite3
 import subprocess
 from pathlib import Path
 
@@ -41,6 +42,16 @@ def test_empty_iss_weights_is_friendly_error(monkeypatch, capsys, no_network):
     monkeypatch.setattr(iss, "fetch_weights", lambda: [])
     assert cli.main(["weights"]) == 1
     assert "ISS" in capsys.readouterr().err
+
+
+def test_db_error_is_friendly_error(monkeypatch, capsys, no_network):
+    def locked():
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(cli, "open_db", locked)
+    assert cli.main(["stats"]) == 1
+    err = capsys.readouterr().err
+    assert "базы данных" in err and "Traceback" not in err
 
 
 def test_no_token_in_git_files():

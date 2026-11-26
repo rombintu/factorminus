@@ -1,5 +1,6 @@
 """SQLite: одна база data/fm.sqlite, реальные и синтетические данные в одних таблицах."""
 
+import re
 import sqlite3
 from pathlib import Path
 
@@ -11,18 +12,29 @@ KEYS = {
     "candles": "instrument_id",
     "index_weights": "ticker",
 }
+# Имена таблиц и колонок подставляются в SQL из словарей; защита от инъекции.
+IDENTIFIER = re.compile(r"^[a-z_][a-z0-9_]*$")
+
+
+def check_identifier(name: str, what: str = "идентификатор") -> str:
+    if not IDENTIFIER.match(name):
+        raise ValueError(f"недопустимое имя {what}: {name!r}")
+    return name
 
 
 def connect(path) -> sqlite3.Connection:
     if str(path) != ":memory:":
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path)
+    conn = sqlite3.connect(path, timeout=30)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA.read_text())
     return conn
 
 
 def upsert(conn: sqlite3.Connection, table: str, row: dict) -> None:
+    check_identifier(table, "таблицы")
+    for col in row:
+        check_identifier(col, "колонки")
     cols = ", ".join(row)
     marks = ", ".join("?" * len(row))
     # Пустое новое значение не затирает старое: uid и ставки риска приходят отдельным вызовом.
