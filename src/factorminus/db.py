@@ -69,4 +69,10 @@ def stats(conn: sqlite3.Connection) -> list[str]:
         for src, n, lo, hi in rows:
             span = f"  {lo} … {hi}" if lo else ""
             lines.append(f"{table:<14} {src:<6} {n:>8}{span}")
+    markets = conn.execute(
+        "SELECT i.id, count(c.date), min(c.date), max(c.date) FROM instruments i "
+        "LEFT JOIN candles c ON c.instrument_id = i.id WHERE i.kind = 'index' GROUP BY i.id"
+    )
+    for iid, n, lo, hi in markets:
+        lines.append(f"рынок {iid:<14} {n:>8}  {lo} … {hi}")
     return lines

@@ -22,7 +22,7 @@ def test_demo_works_without_token_and_network(tmp_path, capsys, no_network):
     assert cli.main(["demo"]) == 0
     assert (tmp_path / "data" / "fm.sqlite").exists()
     out = capsys.readouterr().out
-    assert "candles" in out and "synth" in out
+    assert "candles" in out and "synth" in out and "SYN_MARKET" in out
 
 
 def test_missing_token_is_friendly_error(capsys, no_network):
