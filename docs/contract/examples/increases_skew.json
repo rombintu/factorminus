@@ -1,0 +1,53 @@
+{
+  "contract_version": "1.0",
+  "verdict": "increases_skew",
+  "severity": "warning",
+  "headline": "После покупки 46% портфеля зависит от нефти",
+  "facts": [
+    "Доля фактора «нефть и газ»: было 31%, станет 46%",
+    "LKOH, ROSN и TATN в шоки 2022 года падали вместе: −38%, −41%, −44%"
+  ],
+  "overlaps": [
+    {
+      "instrument_id": "ROSN_TQBR",
+      "kind": "same_factor",
+      "correlation": 0.74
+    }
+  ],
+  "factors_before": {
+    "oil_gas": 31.0,
+    "banks": 24.0,
+    "broad_market_ru": 35.0,
+    "cash": 10.0
+  },
+  "factors_after": {
+    "oil_gas": 46.0,
+    "banks": 20.0,
+    "broad_market_ru": 28.0,
+    "cash": 6.0
+  },
+  "issuers_before": {
+    "Лукойл": 12.0
+  },
+  "issuers_after": {
+    "Лукойл": 12.0,
+    "Татнефть": 11.0
+  },
+  "correlation_to_portfolio": 0.71,
+  "flags": [
+    "composition_unknown"
+  ],
+  "trace": {
+    "echelon": "rules",
+    "rules_fired": [
+      "factor_skew",
+      "shock_comovement"
+    ],
+    "laya_used": false,
+    "latency_ms": 18
+  },
+  "data_as_of": {
+    "candles": "2026-11-21",
+    "index_weights": "2026-11-20"
+  }
+}
