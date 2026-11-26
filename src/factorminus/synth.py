@@ -152,8 +152,8 @@ def simulate(seed: int = SEED) -> dict[str, np.ndarray]:
 def write(conn, seed: int = SEED) -> dict:
     """Удалить старую синтетику и записать новую. Возвращает число строк по таблицам."""
     for table, key in (("instruments", "id"), ("brands", "uid"), ("candles", "instrument_id"),
-                       ("index_weights", "index_id")):  # fmt: skip
-        conn.execute(f"DELETE FROM {table} WHERE {key} LIKE 'SYN%'")
+                       ("index_weights", "ticker")):  # fmt: skip
+        conn.execute(f"DELETE FROM {table} WHERE {key} LIKE 'SYN\\_%' ESCAPE '\\'")
     stamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     for key, (name, company, sector, text) in BRANDS.items():
         conn.execute(

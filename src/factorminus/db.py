@@ -9,7 +9,7 @@ KEYS = {
     "instruments": "id",
     "brands": "uid",
     "candles": "instrument_id",
-    "index_weights": "index_id",
+    "index_weights": "ticker",
 }
 
 
@@ -25,7 +25,10 @@ def connect(path) -> sqlite3.Connection:
 def upsert(conn: sqlite3.Connection, table: str, row: dict) -> None:
     cols = ", ".join(row)
     marks = ", ".join("?" * len(row))
-    conn.execute(f"INSERT OR REPLACE INTO {table} ({cols}) VALUES ({marks})", list(row.values()))
+    # Пустое новое значение не затирает старое: uid и ставки риска приходят отдельным вызовом.
+    keep = ", ".join(f"{c} = coalesce(excluded.{c}, {c})" for c in row)
+    sql = f"INSERT INTO {table} ({cols}) VALUES ({marks}) ON CONFLICT DO UPDATE SET {keep}"
+    conn.execute(sql, list(row.values()))
 
 
 def stats(conn: sqlite3.Connection) -> list[str]:
@@ -35,7 +38,7 @@ def stats(conn: sqlite3.Connection) -> list[str]:
         has_date = table in ("candles", "index_weights")
         dates = "min(date), max(date)" if has_date else "NULL, NULL"
         sql = (
-            f"SELECT CASE WHEN {key} LIKE 'SYN%' THEN 'synth' ELSE 'real' END AS src, "
+            f"SELECT CASE WHEN {key} LIKE 'SYN\\_%' ESCAPE '\\' THEN 'synth' ELSE 'real' END AS src, "
             f"count(*), {dates} FROM {table} GROUP BY src ORDER BY src"
         )
         rows = conn.execute(sql).fetchall() or [("-", 0, None, None)]

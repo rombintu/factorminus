@@ -30,15 +30,16 @@ class McpError(Exception):
     """Ожидаемая ошибка MCP: CLI печатает её без трейсбека."""
 
 
-class _SessionExpired(Exception):
-    pass
+class _SessionExpired(McpError):
+    def __init__(self):
+        super().__init__("сессия MCP истекла и после переподключения")
 
 
 class Mcp:
     def __init__(self, token, url, transport=None, verbose=False, pause=PAUSE):
         self.url = config.check_url(url)
         self.verbose, self.pause = verbose, pause
-        self.session = None
+        self.session, self.ready = None, False
         self._ids = itertools.count(1)
         self._last = 0.0
         headers = {
@@ -57,17 +58,20 @@ class Mcp:
             raise McpError(f"инструмент {tool} не в белом списке, запрос не отправлен")
         args = args or {}
         started = time.monotonic()
-        result = self._request("tools/call", {"name": tool, "arguments": args})
-        if self.verbose:
-            shown = json.dumps(args, ensure_ascii=False)
-            print(f"mcp {tool} {shown} {time.monotonic() - started:.2f}s", file=sys.stderr)
-        return parse_result(tool, result)
+        try:
+            return parse_result(
+                tool, self._request("tools/call", {"name": tool, "arguments": args})
+            )
+        finally:
+            if self.verbose:
+                shown = json.dumps(args, ensure_ascii=False)
+                print(f"mcp {tool} {shown} {time.monotonic() - started:.2f}s", file=sys.stderr)
 
     def tools(self) -> list[str]:
         return [t["name"] for t in self._request("tools/list", {}).get("tools", [])]
 
     def _request(self, method, params):
-        if self.session is None:
+        if not self.ready:
             self._initialize()
         try:
             return self._rpc(method, params)
@@ -76,11 +80,12 @@ class Mcp:
             return self._rpc(method, params)
 
     def _initialize(self):
-        self.session = None
+        self.session, self.ready = None, False
         info = {"name": "factorminus", "version": "0.1"}
         params = {"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": info}
         self._rpc("initialize", params)
         self._post({"jsonrpc": "2.0", "method": "notifications/initialized"})
+        self.ready = True
 
     def _rpc(self, method, params):
         rid = next(self._ids)
@@ -129,7 +134,10 @@ class Mcp:
 def read_message(resp: httpx.Response, rid: int) -> dict:
     """Ответ JSON-RPC из обычного JSON или из SSE (берётся data: с нужным id)."""
     if "text/event-stream" not in resp.headers.get("content-type", ""):
-        return resp.json()
+        try:
+            return resp.json()
+        except ValueError:
+            raise McpError(f"ответ MCP не JSON: {resp.text[:200]}") from None
     for line in resp.text.splitlines():
         if line.startswith("data:"):
             try:

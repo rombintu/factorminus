@@ -35,6 +35,7 @@ Docker: `docker compose run --rm app` (демо) или `docker compose run --rm
 - `fm call -v invest_get_share '{"instrumentId": "SBER_TQBR", "idType": "INSTRUMENT_ID_TYPE_ID"}'` — сырой JSON ответа.
 - `-v` у любой команды печатает в stderr каждый вызов MCP: инструмент, аргументы, время.
 - В таблицах `instruments` и `brands` лежит `raw_json` исходного ответа: `sqlite3 data/fm.sqlite "select raw_json from instruments where id='TMOS_TQBR'"`.
+- Повторный `fm ingest` догружает свечи с последнего дня. Чтобы загрузить более ранний период (`--since` раньше прежнего), сначала `fm reset`.
 - Ожидаемые ошибки (нет токена, бумага не найдена, сеть) печатаются одной строкой.
 
 ## Безопасность

@@ -42,7 +42,7 @@ def candles(args):
 
 
 def risk(args):
-    rows = [{"instrumentUid": f"uid-{i}", "shortRiskRates": [], "longRiskRates": []}
+    rows = [{"instrumentUid": f"uid-{i}", "shortRiskRates": [{"riskLevelCode": "HIGH", "value": {"value": "0.1"}}, {"riskLevelCode": "STANDARD", "value": {"value": "0.2"}}], "longRiskRates": []}
             for i in args["instrumentId"]]  # fmt: skip
     return {"instrumentRiskRates": rows}
 
@@ -78,7 +78,10 @@ def test_ingest_fills_db_and_rerun_does_not_duplicate(server):
     assert conn.execute("SELECT min(date) FROM candles").fetchone()[0] == "2020-01-01"
     row = conn.execute("SELECT * FROM instruments WHERE id='SYNA_TQBR'").fetchone()
     assert (
-        row["brand_uid"] == "b-asset-a" and row["uid"] == "uid-SYNA_TQBR" and row["dlong"] == 0.25
+        row["brand_uid"] == "b-asset-a"
+        and row["uid"] == "uid-SYNA_TQBR"
+        and row["dlong"] == 0.25
+        and row["dshort"] == 0.2
     )
     assert row["raw_json"] and row["source"] == "mcp"
 
